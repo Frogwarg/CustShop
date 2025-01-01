@@ -1,0 +1,23 @@
+footer{
+    height:287px;
+    padding-top:48px;
+    bottom:0;
+}
+.footer__container{
+    position: relative;
+    display:flex;
+    width:1703px;
+    margin-left:auto;
+    margin-right:auto;
+}
+.footer__column{
+    padding-right:160px;
+}
+.footer__ul{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+.footer__ul>li{
+    height: fit-content;
+}

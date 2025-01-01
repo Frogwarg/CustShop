@@ -1,0 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@400;700&display=swap');
+header{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px 250px 0 250px;
+    height:128px;
+    position: sticky;
+}
+.header__logo>a{
+    display:flex;
+    flex-direction: column;
+    justify-content: center;
+    gap:9px;
+}
+
+.menu{
+    display: flex;
+    padding: 0px;
+}
+.header__ul{
+    display:flex;
+    flex-direction: row;
+}
+.header__ul>li{
+    margin-left:15px;
+    margin-right:15px;
+}
