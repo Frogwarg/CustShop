@@ -22,7 +22,7 @@ const DesignProduct = () => {
     const [selectedLayerId, setSelectedLayerId] = useState<number | string | null>(null);
     const [currentText, setCurrentText] = useState('Your Text Here');
     const [backgroundColor] = useState('#FFFFFF');
-    const canvasContainerRef = useRef<HTMLDivElement | null>(null);
+    // const canvasContainerRef = useRef<HTMLDivElement | null>(null);
     const [canvasSize, setCanvasSize] = useState(() => {
         if (typeof window !== 'undefined') {
             return { width: window.innerWidth * 0.8, height: window.innerHeight };
@@ -33,130 +33,96 @@ const DesignProduct = () => {
     const objectsRef = useRef<fabric.Object[]>([]);
 
     useEffect(() => {
-        if (!canvasContainerRef.current) return;
-
-        const canvasElement = document.createElement('canvas');
-        canvasContainerRef.current.appendChild(canvasElement);
-
-        const canvas = new fabric.Canvas(canvasElement, {
-            width: canvasSize.width,
-            height: canvasSize.height,
-        });
-        canvasRef.current = canvas;
-
-        // Добавление overlayImage
-        fabric.Image.fromURL('/products/shirt-mask.png', (overlayImg) => {
-            canvas.setOverlayImage(overlayImg, canvas.renderAll.bind(canvas), {
-                left: (canvasSize.width - overlayImg.width!) / 2,
-                top: (canvasSize.height - overlayImg.height!) / 2,
-            });
-        });
-
-        return () => {
-            canvas.dispose();
-            canvasRef.current = null;
-        };
-    }, [canvasSize]);
-
-    // Обновление размеров канваса
-    useEffect(() => {
         const handleResize = () => {
-            const newWidth = window.innerWidth * 0.8;
-            const newHeight = window.innerHeight * 0.8;
-
+            const newWidth = Math.min(window.innerWidth * 0.8, 1000);
+            const newHeight = Math.min(window.innerHeight, 1000);
+        
             if (canvasRef.current) {
                 const canvas = canvasRef.current;
-
-                const scaleX = newWidth / canvas.width!;
-                const scaleY = newHeight / canvas.height!;
-
+                const overlayImg = canvas.overlayImage;
+                
+                if (!overlayImg) return;
+        
+                // Получаем старые и новые координаты области майки
+                const oldOverlayLeft = (canvas.width! - overlayImg.width!) / 2;
+                const oldOverlayTop = (canvas.height! - overlayImg.height!) / 2;
+                const newOverlayLeft = (newWidth - overlayImg.width!) / 2;
+                const newOverlayTop = (newHeight - overlayImg.height!) / 2;
+        
                 canvas.setDimensions({ width: newWidth, height: newHeight });
-
-                canvas.getObjects().forEach((obj) => {
-                    obj.scaleX = (obj.scaleX ?? 1) * scaleX;
-                    obj.scaleY = (obj.scaleY ?? 1) * scaleY;
-                    obj.left = (obj.left ?? 0) * scaleX;
-                    obj.top = (obj.top ?? 0) * scaleY;
+        
+                // Обновляем положение overlay
+                overlayImg.set({
+                    strokeWidth: 0,
+                    stroke: undefined,
+                    left: newOverlayLeft,
+                    top: newOverlayTop
+                });
+        
+                // Обновляем все объекты
+                canvas.getObjects().forEach(obj => {
+                    if (obj === overlayImg) return;
+        
+                    // Вычисляем относительную позицию объекта внутри области майки
+                    const relativeX = (obj.left! - oldOverlayLeft) / overlayImg.width!;
+                    const relativeY = (obj.top! - oldOverlayTop) / overlayImg.height!;
+        
+                    // Устанавливаем новую позицию, сохраняя относительное положение
+                    obj.set({
+                        left: newOverlayLeft + (relativeX * overlayImg.width!),
+                        top: newOverlayTop + (relativeY * overlayImg.height!)
+                    });
+        
+                    // Обновляем clipPath
+                    obj.clipPath = new fabric.Rect({
+                        left: newOverlayLeft + 1,
+                        top: newOverlayTop + 1,
+                        width: overlayImg.width ? overlayImg.width - 3 : 0,
+                        height: overlayImg.height ? overlayImg.height - 3 : 0,
+                        absolutePositioned: true
+                    });
+        
                     obj.setCoords();
                 });
-
+        
                 canvas.renderAll();
             }
-
+        
             setCanvasSize({ width: newWidth, height: newHeight });
         };
-
+    
         window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-        };
-    }, []);
-
+        return () => window.removeEventListener('resize', handleResize);
+    }, []); // Теперь этот эффект запускается только при монтировании
+    
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const updateCanvasSize = () => {
-                setCanvasSize({ width: window.innerWidth * 0.8, height: window.innerHeight });
-            };
-
-            updateCanvasSize(); // Установить размер при монтировании
-            window.addEventListener('resize', updateCanvasSize);
-
-            return () => {
-                window.removeEventListener('resize', updateCanvasSize);
-            };
+        // Инициализируем canvas только при первом рендере
+        if (!canvasRef.current) {
+            const canvas = new fabric.Canvas('canvas', {
+                width: canvasSize.width,
+                height: canvasSize.height,
+                backgroundColor: backgroundColor,
+                selection: false,
+                controlsAboveOverlay: true
+            });
+            canvasRef.current = canvas;
+    
+            fabric.Image.fromURL('/products/shirt-mask.png', (overlayImg) => {
+                canvas.setOverlayImage(overlayImg, canvas.renderAll.bind(canvas), {
+                    left: (canvasSize.width - overlayImg.width!) / 2,
+                    top: (canvasSize.height - overlayImg.height!) / 2,
+                });
+            });
+    
+            // Добавляем обработчик клика
+            canvas.on('mouse:down', (e) => {
+                if (!e.target) {
+                    setSelectedLayerId(null);
+                    canvas.discardActiveObject().renderAll();
+                }
+            });
         }
     }, []);
-
-    useEffect(() => {
-        const canvas = new fabric.Canvas('canvas', {
-            width: canvasSize.width,
-            height: canvasSize.height,
-            backgroundColor: backgroundColor,
-        });
-        canvasRef.current = canvas;
-    
-        // Создаем группу после загрузки overlay
-        fabric.Image.fromURL('/products/shirt-mask.png', (overlayImg) => {
-            // Позиционируем overlay
-            canvas.setOverlayImage(overlayImg, canvas.renderAll.bind(canvas), {
-                left: overlayImg.width ? (canvasSize.width - overlayImg.width) / 2 : 0,
-                top: overlayImg.height ? (canvasSize.height - overlayImg.height) / 2 : 0,
-            });
-    
-            // Создаем группу с правильными координатами
-            const imageGroup = new fabric.Group([], {
-                left: overlayImg.width ? (canvasSize.width - overlayImg.width) / 2 : 0,
-                top: overlayImg.height ? (canvasSize.height - overlayImg.height) / 2 : 0,
-                selectable: true,   
-                subTargetCheck: true,
-                evented: true,      
-                // lockMovementX: true, 
-                // lockMovementY: true 
-            });
-    
-            // Создаем clipPath с правильными размерами
-            imageGroup.clipPath = new fabric.Rect({
-                left: overlayImg.width ? (canvasSize.width - overlayImg.width) / 2 : 0,
-                top: overlayImg.height ? (canvasSize.height - overlayImg.height) / 2 : 0,
-                width: overlayImg.width,
-                height: overlayImg.height,
-                absolutePositioned: true
-            });
-    
-            canvas.add(imageGroup);
-            // setImageGroup(imageGroup);
-        });
-        canvas.on('mouse:down', (e) => {
-            if (!e.target) {
-              setSelectedLayerId(null);
-              canvas.discardActiveObject().renderAll();
-            }
-          });
-
-        return () => {
-            canvas.dispose();
-        };
-    }, [canvasSize, backgroundColor]);
     
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -186,15 +152,18 @@ const DesignProduct = () => {
                     selectable: true,
                     evented: true,
                     hasBorders: true,
-                    hasControls: true
+                    hasControls: true,
                 });
                 const overlayImg = canvasRef.current?.overlayImage;
-                if (overlayImg) {
+                if (overlayImg && overlayImg.width && overlayImg.height) {
+                    const overlayLeft = (canvasSize.width - overlayImg.width) / 2;
+                    const overlayTop = (canvasSize.height - overlayImg.height) / 2;
+
                     fabricImage.clipPath = new fabric.Rect({
-                        left: overlayImg.width ? (canvasSize.width - overlayImg.width) / 2 : 0,
-                        top: overlayImg.height ? (canvasSize.height - overlayImg.height) / 2 : 0,
-                        width: overlayImg.width,
-                        height: overlayImg.height,
+                        left: overlayLeft + 1,
+                        top: overlayTop + 1,
+                        width: overlayImg.width - 3,
+                        height: overlayImg.height - 3,
                         absolutePositioned: true
                     });
                 }
@@ -230,14 +199,16 @@ const DesignProduct = () => {
         });
 
         const overlayImg = canvasRef.current?.overlayImage;
-        if (overlayImg) {
-            text.clipPath = new fabric.Rect({
-                left: overlayImg.width ? (canvasSize.width - overlayImg.width) / 2 : 0,
-                top: overlayImg.height ? (canvasSize.height - overlayImg.height) / 2 : 0,
-                width: overlayImg.width,
-                height: overlayImg.height,
-                absolutePositioned: true
-            });
+            if (overlayImg && overlayImg.width && overlayImg.height) {
+                const overlayLeft = (canvasSize.width - overlayImg.width) / 2;
+                const overlayTop = (canvasSize.height - overlayImg.height) / 2;
+                text.clipPath = new fabric.Rect({
+                    left: overlayLeft + 1,
+                    top: overlayTop + 1,
+                    width: overlayImg.width - 3,
+                    height: overlayImg.height - 3,
+                    absolutePositioned: true
+                });
         }
         canvasRef.current?.add(text);
         objectsRef.current = canvasRef.current?.getObjects() || [];
@@ -257,19 +228,73 @@ const DesignProduct = () => {
         setCurrentText('');
     };
 
-    const getAllObjects = () =>{
-        console.log(canvasRef.current?.getObjects());
-    }
-
     const handleSelectLayer = (layerId: number | string) => {
         setSelectedLayerId(layerId);
     };
 
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+    
+        // Словарь для хранения начальных z-index объектов
+        const objectZIndices: Map<fabric.Object, number> = new Map();
+    
+        const handleSelection = (event: fabric.IEvent) => {
+            const target = event.selected ? event.selected[0] : null; // Получаем первый объект из массива selected
+            if (target) {
+                // Перемещаем объект на самый верх
+                canvas.bringToFront(target);
+                console.log('selected:', target);
+        
+                // Сохраняем текущий z-index объекта
+                const index = canvas.getObjects().indexOf(target);
+                objectZIndices.set(target, index);
+                const overlayImage = canvas.overlayImage;
+                if (overlayImage) {
+                    canvas.sendBackwards(overlayImage);
+                }
+            }
+        };
+        
+        const handleDeselection = (event: fabric.IEvent) => {
+            const deselected = event.deselected; // Массив снятых объектов
+            
+        
+            if (deselected && deselected.length > 0) {
+                deselected.forEach((target) => {
+                    if (objectZIndices.has(target)) {
+                        // Возвращаем объект на исходный z-index
+                        const originalIndex = objectZIndices.get(target)!;
+                        canvas.remove(target);
+                        canvas.insertAt(target, originalIndex, false);
+                        objectZIndices.delete(target);
+                        console.log('deselected:', deselected); // Лог для проверки снятия выделения
+                    }
+                });
+            }
+        };
+    
+        // Подписываемся на события
+        canvas.on('selection:created', handleSelection);
+        canvas.on('selection:cleared', handleDeselection);
+    
+        // Отписываемся от событий при размонтировании
+        return () => {
+            canvas.off('selection:created', handleSelection);
+            canvas.off('selection:cleared', handleDeselection);
+        };
+    }, []);
+
     const saveDesign = () => {
         if (canvasRef.current) {
+            const overlayImage = canvasRef.current?.overlayImage;
             const dataURL = canvasRef.current.toDataURL({
                 format: 'png',
-                quality: 1.0
+                quality: 1.0,
+                top: overlayImage ? overlayImage.top : 0,
+                left: overlayImage ? overlayImage.left : 0,
+                width: overlayImage ? overlayImage.width : canvasRef.current.width,
+                height: overlayImage ? overlayImage.height : canvasRef.current.height
             });
 
             const link = document.createElement('a');
@@ -366,7 +391,6 @@ const DesignProduct = () => {
                 />
                 <button onClick={handleAddText}>Add Text</button>
                 <button onClick={saveDesign}>Save Design</button>
-                <button onClick={getAllObjects}>Get All Objects</button>
             </div>
         </div>
     );
