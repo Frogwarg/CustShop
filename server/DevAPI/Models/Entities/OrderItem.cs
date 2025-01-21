@@ -1,4 +1,4 @@
-﻿namespace DevAPI.Models
+﻿namespace DevAPI.Models.Entities
 {
     public class OrderItem
     {

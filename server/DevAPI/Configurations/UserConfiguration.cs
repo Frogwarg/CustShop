@@ -1,6 +1,6 @@
-﻿using DevAPI.Models;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
+using DevAPI.Models.Entities;
 
 namespace DevAPI.Configurations
 {
@@ -14,7 +14,7 @@ namespace DevAPI.Configurations
             builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(255);
             builder.Property(u => u.FirstName).IsRequired().HasMaxLength(100);
             builder.Property(u => u.LastName).HasMaxLength(100);
-            builder.Property(u => u.Phone).HasMaxLength(15);
+            builder.Property(u => u.PhoneNumber).HasMaxLength(15);
 
             builder.HasMany(u => u.Orders)
                 .WithOne(o => o.User)

@@ -1,9 +1,11 @@
-﻿using DevAPI.Models;
+﻿using DevAPI.Models.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace DevAPI.Data
 {
-    public class StoreDbContext : DbContext
+    public class StoreDbContext : IdentityDbContext<User, Role, Guid>
     {
         public StoreDbContext(DbContextOptions<StoreDbContext> options) : base(options) { }
 
@@ -23,6 +25,15 @@ namespace DevAPI.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
+            // Исключаем ненужные стандартные сущности
+            modelBuilder.Ignore<IdentityUserLogin<Guid>>();
+            modelBuilder.Ignore<IdentityUserToken<Guid>>();
+            modelBuilder.Ignore<IdentityUserClaim<Guid>>();
+            modelBuilder.Ignore<IdentityRoleClaim<Guid>>();
+            modelBuilder.Ignore<IdentityUserRole<Guid>>();
+
             modelBuilder.ApplyConfiguration(new Configurations.UserConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.UserProfileConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.RoleConfiguration());

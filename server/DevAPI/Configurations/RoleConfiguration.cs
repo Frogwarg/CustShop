@@ -1,6 +1,6 @@
-﻿using DevAPI.Models;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
+using DevAPI.Models.Entities;
 
 namespace DevAPI.Configurations
 {

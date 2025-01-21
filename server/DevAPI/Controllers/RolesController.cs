@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using DevAPI.Data;
-using DevAPI.Models;
+using DevAPI.Models.Entities;
+using DevAPI.Attributes;
+using DevAPI.Models.Enums;
 
 namespace DevAPI.Controllers
 {

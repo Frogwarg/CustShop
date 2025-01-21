@@ -1,6 +1,6 @@
-﻿using DevAPI.Models;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
+using DevAPI.Models.Entities;
 
 namespace DevAPI.Configurations
 {
@@ -8,7 +8,9 @@ namespace DevAPI.Configurations
     {
         public void Configure(EntityTypeBuilder<UserRole> builder)
         {
-            builder.HasKey(ur => ur.Id);
+            //builder.HasKey(ur => ur.Id);
+
+            builder.HasKey(ur => new { ur.UserId, ur.RoleId });
 
             builder.HasOne(ur => ur.User)
                 .WithMany(u => u.UserRoles)

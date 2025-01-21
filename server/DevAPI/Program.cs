@@ -1,5 +1,13 @@
 using DevAPI.Data;
+using DevAPI.Data.Seeders;
+using DevAPI.Models.Entities;
+using DevAPI.Services.Implementations;
+using DevAPI.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,12 +25,56 @@ builder.Services.AddCors(options =>
                .AllowAnyMethod();
     });
 });
+builder.Services.AddIdentity<User, Role>(options => {
+    options.Password.RequiredLength = 8;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireDigit = true;
+})
+    .AddEntityFrameworkStores<StoreDbContext>()
+    .AddDefaultTokenProviders();
+
+// Настраиваем аутентификацию
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.SaveToken = true;
+    options.RequireHttpsMetadata = false;
+    options.TokenValidationParameters = new TokenValidationParameters()
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateIssuerSigningKey = true,
+        ValidAudience = builder.Configuration["JWT:ValidAudience"],
+        ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"])),
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+// Регистрируем сервисы
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<RoleManager<Role>>();
 
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
+await RoleSeeder.SeedRoles(app.Services);
+
 app.UseRouting();
+app.UseCors("AllowNextJS");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 // Configure the HTTP request pipeline.
@@ -42,9 +94,5 @@ app.MapGet("/routes", (IEnumerable<EndpointDataSource> endpointSources) =>
         .ToList();
     return routes;
 });
-
-//app.UseHttpsRedirection();
-
-app.UseCors("AllowNextJS");
 
 app.Run();
