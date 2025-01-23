@@ -3,6 +3,7 @@ using System;
 using DevAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DevAPI.Migrations
 {
     [DbContext(typeof(StoreDbContext))]
-    partial class StoreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250123143414_userrolechanges")]
+    partial class userrolechanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -480,7 +483,7 @@ namespace DevAPI.Migrations
                     b.ToTable("UserProfiles");
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
+            modelBuilder.Entity("DevAPI.Models.Entities.UserRole", b =>
                 {
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -488,11 +491,14 @@ namespace DevAPI.Migrations
                     b.Property<Guid>("RoleId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("UserId", "RoleId");
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("AspNetUserRoles", (string)null);
+                    b.ToTable("UserRoles");
                 });
 
             modelBuilder.Entity("DevAPI.Models.Entities.CartItem", b =>
@@ -628,19 +634,23 @@ namespace DevAPI.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
+            modelBuilder.Entity("DevAPI.Models.Entities.UserRole", b =>
                 {
-                    b.HasOne("DevAPI.Models.Entities.Role", null)
-                        .WithMany()
+                    b.HasOne("DevAPI.Models.Entities.Role", "Role")
+                        .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DevAPI.Models.Entities.User", null)
-                        .WithMany()
+                    b.HasOne("DevAPI.Models.Entities.User", "User")
+                        .WithMany("UserRoles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DevAPI.Models.Entities.Address", b =>
@@ -672,6 +682,11 @@ namespace DevAPI.Migrations
                     b.Navigation("OrderItems");
                 });
 
+            modelBuilder.Entity("DevAPI.Models.Entities.Role", b =>
+                {
+                    b.Navigation("UserRoles");
+                });
+
             modelBuilder.Entity("DevAPI.Models.Entities.User", b =>
                 {
                     b.Navigation("CartItems");
@@ -684,6 +699,8 @@ namespace DevAPI.Migrations
 
                     b.Navigation("UserProfile")
                         .IsRequired();
+
+                    b.Navigation("UserRoles");
                 });
 #pragma warning restore 612, 618
         }

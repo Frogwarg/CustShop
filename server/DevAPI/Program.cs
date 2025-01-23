@@ -14,6 +14,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddLogging(configure =>
+{
+    configure.AddConsole(); // Вывод в консоль
+    configure.AddDebug();   // Вывод отладочных сообщений
+});
 builder.Services.AddDbContext<StoreDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddCors(options =>
@@ -53,7 +58,9 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidAudience = builder.Configuration["JWT:ValidAudience"],
         ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"])),
+        //IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"])),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+            Environment.GetEnvironmentVariable("JWT_SECRET") ?? throw new InvalidOperationException("JWT_SECRET is not set"))), // Здесь используем переменную окружения
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
@@ -70,6 +77,7 @@ builder.Services.AddControllers();
 var app = builder.Build();
 
 await RoleSeeder.SeedRoles(app.Services);
+await AdminSeeder.SeedAdminAsync(app.Services);
 
 app.UseRouting();
 app.UseCors("AllowNextJS");

@@ -35,10 +35,6 @@ namespace DevAPI.Configurations
             builder.HasOne(u => u.UserProfile)
                 .WithOne(up => up.User)
                 .HasForeignKey<UserProfile>(up => up.UserId);
-
-            builder.HasMany(u => u.UserRoles)
-                .WithOne(ur => ur.User)
-                .HasForeignKey(ur => ur.UserId);
         }
     }
 }

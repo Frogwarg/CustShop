@@ -12,7 +12,6 @@ namespace DevAPI.Data
         public DbSet<User> Users { get; set; }
         public DbSet<UserProfile> UserProfiles { get; set; }
         public DbSet<Role> Roles { get; set; }
-        public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<Design> Designs { get; set; }
         public DbSet<DesignHistory> DesignHistories { get; set; }
         public DbSet<DesignType> DesignTypes { get; set; }
@@ -32,12 +31,10 @@ namespace DevAPI.Data
             modelBuilder.Ignore<IdentityUserToken<Guid>>();
             modelBuilder.Ignore<IdentityUserClaim<Guid>>();
             modelBuilder.Ignore<IdentityRoleClaim<Guid>>();
-            modelBuilder.Ignore<IdentityUserRole<Guid>>();
 
             modelBuilder.ApplyConfiguration(new Configurations.UserConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.UserProfileConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.RoleConfiguration());
-            modelBuilder.ApplyConfiguration(new Configurations.UserRoleConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.DesignConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.DesignHistoryConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.DesignTypeConfiguration());

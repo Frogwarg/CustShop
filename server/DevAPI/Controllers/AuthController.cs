@@ -3,6 +3,7 @@ using DevAPI.Models.DTOs;
 using DevAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace DevAPI.Controllers
 {
@@ -11,10 +12,12 @@ namespace DevAPI.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger)
         {
             _authService = authService;
+            _logger = logger;
         }
 
         [HttpPost("login")]
@@ -34,14 +37,22 @@ namespace DevAPI.Controllers
         [HttpPost("register")]
         public async Task<ActionResult<AuthResponse>> Register([FromBody] DevAPI.Models.DTOs.RegisterRequest request)
         {
+            _logger.LogInformation($"Получен запрос на регистрацию для email: {request.Email}");
             try
             {
+                _logger.LogInformation($"Данные запроса: {JsonSerializer.Serialize(request)}");
                 var result = await _authService.RegisterAsync(request);
                 return Ok(result);
             }
             catch (BadRequestException ex)
             {
+                _logger.LogWarning($"Ошибка при регистрации: {ex.Message}");
                 return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Необработанная ошибка при регистрации: {ex}");
+                return StatusCode(500, new { message = "Внутренняя ошибка сервера" });
             }
         }
 

@@ -10,7 +10,6 @@ namespace DevAPI.Models.Entities
         public string RefreshToken { get; set; }
         public DateTime RefreshTokenExpiryTime { get; set; }
         public UserProfile UserProfile { get; set; }
-        public ICollection<UserRole> UserRoles { get; set; }
 
         // Custom properties
         public string FirstName { get; set; }

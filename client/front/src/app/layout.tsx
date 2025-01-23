@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "@/app/globals.css";
 
+import { AuthProvider } from './contexts/AuthContext';
+
 import Header from "./Header/Header";
 import Footer from "./Footer/Footer";
 
@@ -19,11 +21,13 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body>
+      <AuthProvider>
         <Header />
-        <main>
-          {children}
-        </main>
+          <main>
+            {children}
+          </main>
         <Footer />
+      </AuthProvider>
       </body>
     </html>
   );
