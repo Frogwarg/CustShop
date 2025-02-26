@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@/app/globals.css";
 
+import { Toaster } from 'sonner'
 import { AuthProvider } from './contexts/AuthContext';
 
 import Header from "./Header/Header";
@@ -25,6 +26,7 @@ export default function RootLayout({
         <Header />
           <main>
             {children}
+            <Toaster expand={true} position="bottom-left" richColors closeButton/>
           </main>
         <Footer />
       </AuthProvider>

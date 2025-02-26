@@ -15,7 +15,7 @@ export default function Login() {
     e.preventDefault();
     try {
       await login(email, password);
-      router.push('/'); // Редирект на главную после успешного входа
+      router.push('/');
     } catch {
       setError('Неверный email или пароль');
     } 

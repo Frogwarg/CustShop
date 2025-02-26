@@ -62,12 +62,11 @@ const Header = () => {
                             </Link>
                             </>
                         )}
-                        {/* <li>*/}
-                            {/* вход в аккаунт */}
-                        {/*</li>*/}
-                        {/*<li>*/}
-                            {/* корзина */}
-                        {/*</li> */}
+                        <li>
+                            <Link href="/cart">
+                                <span className="hover:text-gray-300">Корзина</span>
+                            </Link>
+                        </li>
                     </ul>
                 </div>
             </nav>

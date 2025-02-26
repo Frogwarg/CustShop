@@ -1,15 +1,22 @@
 import Image from 'next/image';
 import "@/app/constructor/productModal.css";
 
+interface Product {
+    id: string;
+    type: string;
+    name: string;
+    image: string;
+}
+
 const ProductModal = ({ isOpen, onClose, onSelectProduct }: { 
     isOpen: boolean; 
     onClose: () => void; 
-    onSelectProduct: (product: string, type: string) => void;
+    onSelectProduct: (productId: string, productType: string) => void;
 }) => {
     if (!isOpen) return null;
 
     const categories = ['Категория 1', 'Категория 2', 'Категория 3']; // Пример категорий
-    const products = [
+    const products: Product[] = [
         { id: 'shirt', type: '3D', name: 'Майка', image: '/products/shirt-mask.png' },
         { id: 'mug', type: 'regular', name: 'Кружка', image: '/products/mug-mask.png' },
         { id: 'pillow', type: 'regular', name: 'Подушка', image: '/products/pillow-mask.png' },

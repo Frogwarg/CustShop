@@ -1,10 +1,12 @@
 "use client"
 import { fabric } from 'fabric';
+import { toast } from 'sonner'
 import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 
 import ProductModal from './productModal';
 import TabbedControls from './tabbedControl';
+//import { dataURLtoBlob } from '@/app/utils/lib';
 
 const DesignProduct = () => {
     interface Layer {
@@ -21,8 +23,8 @@ const DesignProduct = () => {
         rotation?: number;
     }
     
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<{id: string; type: string} | null>(null);
+    const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [selectedObject, setSelectedObject] = useState<fabric.Object | null>(null);
     const [layers, setLayers] = useState<Layer[]>([]);
     const [selectedLayerId, setSelectedLayerId] = useState<number | string | null>(null);
@@ -38,6 +40,93 @@ const DesignProduct = () => {
     const canvasRef = useRef<fabric.Canvas | null>(null);
     const objectsRef = useRef<fabric.Object[]>([]);
 
+    const handleProductSelect = (productId: string, productType: string) => {
+        setSelectedProduct({ id: productId, type: productType });
+        setIsProductModalOpen(false);
+    
+        if (canvasRef.current) {
+            const canvas = canvasRef.current;
+            canvas.overlayImage = undefined;
+            canvas.backgroundImage = undefined;
+
+            canvas.getObjects().forEach((obj) => {
+                if (
+                    (obj.type === 'rect' && obj.strokeDashArray) || // Удаление рамки
+                    obj === canvas.overlayImage                  // Удаление старого overlayImage
+                ) {
+                    canvas.remove(obj);
+                }
+            });
+    
+            fabric.Image.fromURL(`/products/${productId}-mask.png`, (image) => {
+                if (productType === '3D') {
+                    // Установка overlayImage
+                    canvas.setOverlayImage(image, canvas.renderAll.bind(canvas), {
+                        left: (canvas.width! - image.width!) / 2,
+                        top: (canvas.height! - image.height!) / 2,
+                    });
+    
+                    // Обновление clipPath для слоёв
+                    const overlayLeft = (canvas.width! - image.width!) / 2;
+                    const overlayTop = (canvas.height! - image.height!) / 2;
+    
+                    canvas.getObjects().forEach((obj) => {
+                        if (obj !== canvas.overlayImage) {
+                            obj.clipPath = new fabric.Rect({
+                                left: overlayLeft + 1,
+                                top: overlayTop + 1,
+                                width: image.width! - 3,
+                                height: image.height! - 3,
+                                absolutePositioned: true,
+                            });
+                            obj.setCoords();
+                        }
+                    });
+                } else if (productType === 'regular') {
+                    // Установка backgroundImage
+                    canvas.setBackgroundImage(image, canvas.renderAll.bind(canvas), {
+                        left: (canvas.width! - image.width!) / 2,
+                        top: (canvas.height! - image.height!) / 2,
+                        originX: 'left',
+                        originY: 'top',
+                    });
+    
+                    // Добавление прозрачного rect с dotted stroke
+                    const rectArea = new fabric.Rect({
+                        left: (canvas.width! - image.width!) / 2,
+                        top: (canvas.height! - image.height!) / 2,
+                        width: image.width!,
+                        height: image.height!,
+                        stroke: 'black',
+                        strokeDashArray: [5, 5],
+                        fill: 'transparent',
+                        selectable: false,
+                        evented: false,
+                    });
+                    canvas.add(rectArea);
+    
+                    // Обновление clipPath для слоёв
+                    const rectLeft = rectArea.left!;
+                    const rectTop = rectArea.top!;
+    
+                    canvas.getObjects().forEach((obj) => {
+                        if (obj !== rectArea) {
+                            obj.clipPath = new fabric.Rect({
+                                left: rectLeft,
+                                top: rectTop,
+                                width: rectArea.width,
+                                height: rectArea.height,
+                                absolutePositioned: true,
+                            });
+                            obj.setCoords();
+                        }
+                    });
+                }
+    
+                canvas.renderAll();
+            });
+        }
+    }
     useEffect(() => {
         const handleResize = () => {
             const newWidth = window.innerWidth * 0.8;
@@ -312,31 +401,82 @@ const DesignProduct = () => {
         };
     }, []);
 
-    const saveDesign = () => {
+    const saveDesign = async () => {
         if (!canvasRef.current) return;
+        
+        try {
+            // Получаем превью дизайна
+            const overlayImage = canvasRef.current?.overlayImage;
+            const previewDataURL = canvasRef.current.toDataURL({
+                format: 'png',
+                quality: 1.0,
+                top: overlayImage ? overlayImage.top : 0,
+                left: overlayImage ? overlayImage.left : 0,
+                width: overlayImage ? overlayImage.width : canvasRef.current.width,
+                height: overlayImage ? overlayImage.height : canvasRef.current.height
+            });
 
-        const overlayImage = canvasRef.current?.overlayImage;
-        const dataURL = canvasRef.current.toDataURL({
-            format: 'png',
-            quality: 1.0,
-            top: overlayImage ? overlayImage.top : 0,
-            left: overlayImage ? overlayImage.left : 0,
-            width: overlayImage ? overlayImage.width : canvasRef.current.width,
-            height: overlayImage ? overlayImage.height : canvasRef.current.height
-        });
+            // Загружаем превью в ImgBB
+            const uploadResponse = await fetch('/api/upload/design-preview', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    imageData: previewDataURL
+                })
+            });
 
-        const link = document.createElement('a');
-        link.download = 'design.png';
-        link.href = dataURL;
-        link.click();
+            if (!uploadResponse.ok) {
+                throw new Error('Ошибка при загрузке превью');
+            }
 
-        const designData = {
-            canvasSize,
-            prodType: selectedProduct,
-            layers,
-        };
+            const { imageUrl } = await uploadResponse.json();
 
-        console.log(designData);
+            // Подготавливаем данные дизайна
+            const designData = {
+                canvasSize,
+                prodType: selectedProduct,
+                layers: layers.map(layer => ({
+                    ...layer,
+                    url: layer.type === 'image' ? layer.url : undefined
+                }))
+            };
+
+            // Создаем объект для корзины с полученным URL изображения
+            const cartItem = {
+                design: {
+                    name: `Дизайн ${new Date().toLocaleString()}`,
+                    description: "Пользовательский дизайн",
+                    previewUrl: imageUrl, // Используем полученный URL вместо base64
+                    designData: JSON.stringify(designData),
+                    productType: selectedProduct?.id ,
+                    designType: "Custom"
+                },
+                quantity: 1,
+                price: 1000 // Здесь нужна логика расчета цены
+            };
+
+            // Добавляем в корзину
+            const cartResponse = await fetch('/api/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(cartItem)
+            });
+
+            if (cartResponse.ok) {
+                toast.success('Товар добавлен в корзину');
+            } else {
+                // Получаем текст ошибки с сервера
+                const errorText = await cartResponse.text();
+                throw new Error(`Ошибка сервера: ${cartResponse.status} - ${errorText}`);
+            }
+        } catch (error: Error | unknown) {
+            console.error('Ошибка:', error);
+            toast.error(`Ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+        }
     };
 
     const getAllObjects = () =>{
@@ -383,95 +523,9 @@ const DesignProduct = () => {
         <div style={{ display: 'flex', justifyContent:'space-between' }}>
         
             <ProductModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSelectProduct={(product, type) => {
-                    setSelectedProduct(product);
-                    setIsModalOpen(false);
-                
-                    if (canvasRef.current) {
-                        const canvas = canvasRef.current;
-                        canvas.overlayImage = undefined;
-                        canvas.backgroundImage = undefined;
-
-                        canvas.getObjects().forEach((obj) => {
-                            if (
-                                (obj.type === 'rect' && obj.strokeDashArray) || // Удаление рамки
-                                obj === canvas.overlayImage                  // Удаление старого overlayImage
-                            ) {
-                                canvas.remove(obj);
-                            }
-                        });
-                
-                        fabric.Image.fromURL(`/products/${product}-mask.png`, (image) => {
-                            if (type === '3D') {
-                                // Установка overlayImage
-                                canvas.setOverlayImage(image, canvas.renderAll.bind(canvas), {
-                                    left: (canvas.width! - image.width!) / 2,
-                                    top: (canvas.height! - image.height!) / 2,
-                                });
-                
-                                // Обновление clipPath для слоёв
-                                const overlayLeft = (canvas.width! - image.width!) / 2;
-                                const overlayTop = (canvas.height! - image.height!) / 2;
-                
-                                canvas.getObjects().forEach((obj) => {
-                                    if (obj !== canvas.overlayImage) {
-                                        obj.clipPath = new fabric.Rect({
-                                            left: overlayLeft + 1,
-                                            top: overlayTop + 1,
-                                            width: image.width! - 3,
-                                            height: image.height! - 3,
-                                            absolutePositioned: true,
-                                        });
-                                        obj.setCoords();
-                                    }
-                                });
-                            } else if (type === 'regular') {
-                                // Установка backgroundImage
-                                canvas.setBackgroundImage(image, canvas.renderAll.bind(canvas), {
-                                    left: (canvas.width! - image.width!) / 2,
-                                    top: (canvas.height! - image.height!) / 2,
-                                    originX: 'left',
-                                    originY: 'top',
-                                });
-                
-                                // Добавление прозрачного rect с dotted stroke
-                                const rectArea = new fabric.Rect({
-                                    left: (canvas.width! - image.width!) / 2,
-                                    top: (canvas.height! - image.height!) / 2,
-                                    width: image.width!,
-                                    height: image.height!,
-                                    stroke: 'black',
-                                    strokeDashArray: [5, 5],
-                                    fill: 'transparent',
-                                    selectable: false,
-                                    evented: false,
-                                });
-                                canvas.add(rectArea);
-                
-                                // Обновление clipPath для слоёв
-                                const rectLeft = rectArea.left!;
-                                const rectTop = rectArea.top!;
-                
-                                canvas.getObjects().forEach((obj) => {
-                                    if (obj !== rectArea) {
-                                        obj.clipPath = new fabric.Rect({
-                                            left: rectLeft,
-                                            top: rectTop,
-                                            width: rectArea.width,
-                                            height: rectArea.height,
-                                            absolutePositioned: true,
-                                        });
-                                        obj.setCoords();
-                                    }
-                                });
-                            }
-                
-                            canvas.renderAll();
-                        });
-                    }
-                }}
+                isOpen={isProductModalOpen}
+                onClose={() => setIsProductModalOpen(false)}
+                onSelectProduct={handleProductSelect}
             />
 
             <div style={{ width: '200px', marginRight: '20px' }}>
@@ -522,7 +576,7 @@ const DesignProduct = () => {
                     placeholder="Enter text"
                 />
                 <button onClick={handleAddText}>Add Text</button>
-                <button onClick={() => setIsModalOpen(true)}>Выбрать товар</button>
+                <button onClick={() => setIsProductModalOpen(true)}>Выбрать товар</button>
                 <button onClick={getAllObjects}>Get All Objects</button>
                 <button onClick={saveDesign}>Save Design</button>
                 <TabbedControls  selectedObject={selectedObject} 

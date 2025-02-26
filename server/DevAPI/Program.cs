@@ -1,6 +1,7 @@
 using DevAPI.Data;
 using DevAPI.Data.Seeders;
 using DevAPI.Models.Entities;
+using DevAPI.Services;
 using DevAPI.Services.Implementations;
 using DevAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -66,10 +67,22 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddDistributedMemoryCache();
+
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromDays(1);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 // Регистрируем сервисы
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IImageStorageService, ImgBBStorageService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<RoleManager<Role>>();
 
 builder.Services.AddControllers();
@@ -79,6 +92,7 @@ var app = builder.Build();
 await RoleSeeder.SeedRoles(app.Services);
 await AdminSeeder.SeedAdminAsync(app.Services);
 
+app.UseSession();
 app.UseRouting();
 app.UseCors("AllowNextJS");
 app.UseAuthentication();
