@@ -33,6 +33,17 @@ namespace DevAPI.Controllers
                 return Unauthorized();
             }
         }
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            // Очистка куки cart_session_id
+            HttpContext.Response.Cookies.Delete("cart_session_id");
+
+            // Выход из авторизации (например, если используете Identity)
+            //await HttpContext.SignOutAsync();
+
+            return Ok(new { message = "Выход выполнен" });
+        }
 
         [HttpPost("register")]
         public async Task<ActionResult<AuthResponse>> Register([FromBody] DevAPI.Models.DTOs.RegisterRequest request)

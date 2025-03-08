@@ -5,11 +5,13 @@ const API_URL = 'http://localhost:5123/api';
 export interface LoginRequest {
   email: string;
   password: string;
+  sessionId?: string;
 }
 
 export interface RegisterRequest {
   email: string;
   password: string;
+  sessionId?: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;
@@ -22,8 +24,14 @@ export interface AuthResponse {
 }
 
 const authService = {
+  
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await axios.post(`${API_URL}/auth/login`, data);
+    const response = await axios.post(`${API_URL}/auth/login`, data, {
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        withCredentials: true, // Отправляем куки
+    });
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('refreshToken', response.data.refreshToken);
@@ -32,7 +40,12 @@ const authService = {
   },
 
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    const response = await axios.post(`${API_URL}/auth/register`, data);
+    const response = await axios.post(`${API_URL}/auth/register`, data, {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            withCredentials: true, // Отправляем куки
+        });
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('refreshToken', response.data.refreshToken);

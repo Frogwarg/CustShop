@@ -6,16 +6,20 @@ using DevAPI.Data;
 using DevAPI.Models.Entities;
 using DevAPI.Models.DTOs;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using DevAPI.Controllers;
 
 namespace DevAPI.Services
 {
     public class CartService : ICartService
     {
         private readonly StoreDbContext _context;
+        private readonly ILogger<CartController> _logger;
 
-        public CartService(StoreDbContext context)
+        public CartService(StoreDbContext context, ILogger<CartController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task AddToCart(Guid? userId, string sessionId, CartItemDto cartItemDto)
@@ -27,6 +31,7 @@ namespace DevAPI.Services
                 Description = cartItemDto.Design.Description,
                 PreviewUrl = cartItemDto.Design.PreviewUrl,
                 DesignData = cartItemDto.Design.DesignData,
+                DesignHash = cartItemDto.Design.DesignHash,
                 ProductType = cartItemDto.Design.ProductType,
                 DesignTypeId = await GetOrCreateDesignTypeId("Custom"), // Получаем ID для типа Custom
                 UserId = userId,
@@ -41,7 +46,7 @@ namespace DevAPI.Services
                 .FirstOrDefaultAsync(c =>
                     (userId.HasValue ? c.UserId == userId : c.SessionId == sessionId) &&
                     c.Design.ProductType == design.ProductType &&
-                    c.Design.DesignData == design.DesignData);
+                    c.Design.DesignHash == design.DesignHash);
 
             if (existingItem != null)
             {
@@ -108,24 +113,44 @@ namespace DevAPI.Services
 
         public async Task<List<CartItemDto>> GetCart(Guid? userId, string sessionId)
         {
-            return await _context.CartItems
+            var query = _context.CartItems.AsQueryable();
+
+            if (userId.HasValue)
+            {
+                query = query.Where(c => c.UserId == userId);
+            }
+            else if (!string.IsNullOrEmpty(sessionId))
+            {
+                query = query.Where(c => c.SessionId == sessionId);
+            }
+            else
+            {
+                return new List<CartItemDto>();
+            }
+
+            var items = await query
             .Include(c => c.Design)
                 .ThenInclude(d => d.DesignType)
-            .Where(c => userId.HasValue ? c.UserId == userId : c.SessionId == sessionId)
             .Select(c => new CartItemDto
             {
                 Design = new DesignDto
                 {
+                    Id = c.Design.Id,
                     Name = c.Design.Name,
                     Description = c.Design.Description,
                     PreviewUrl = c.Design.PreviewUrl,
                     DesignData = c.Design.DesignData,
+                    DesignHash = c.Design.DesignHash,
                     ProductType = c.Design.ProductType
                 },
                 Quantity = c.Quantity,
                 Price = c.Price
             })
             .ToListAsync();
+
+            _logger?.LogInformation($"Returning {items.Count} items for UserId: {userId} or SessionId: {sessionId}");
+            return items;
+
         }
 
         public async Task ClearCart(Guid? userId, string sessionId)
@@ -175,7 +200,7 @@ namespace DevAPI.Services
                     .FirstOrDefaultAsync(c =>
                         c.UserId == userId &&
                         c.Design.ProductType == anonymousItem.Design.ProductType &&
-                        c.Design.DesignData == anonymousItem.Design.DesignData);
+                        c.Design.DesignHash == anonymousItem.Design.DesignHash);
 
                 if (userItem != null)
                 {

@@ -28,24 +28,37 @@ namespace DevAPI.Controllers
             try
             {
                 _logger.LogInformation($"Получен запрос на добавление в корзину: {request}");
-                Console.WriteLine($"Получен запрос на добавление в корзину: {request}");
+                _logger.LogInformation($"Пользователь авторизоавн?: {User.Identity.IsAuthenticated}");
 
-                string sessionId = HttpContext.Request.Cookies["cart_session_id"];
-                if (string.IsNullOrEmpty(sessionId))
+                var userId = User.Identity.IsAuthenticated
+                ? Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value)
+                : (Guid?)null;
+
+                _logger.LogInformation($"UserId: {userId?.ToString() ?? "null"}");
+
+                string sessionId = null;
+                if (!userId.HasValue) // Только для неавторизованных пользователей
                 {
-                    sessionId = Guid.NewGuid().ToString();
-                    HttpContext.Response.Cookies.Append("cart_session_id", sessionId, new CookieOptions
+                    sessionId = HttpContext.Request.Cookies["cart_session_id"];
+                    if (string.IsNullOrEmpty(sessionId))
                     {
-                        HttpOnly = true,
-                        Expires = DateTime.Now.AddDays(30)
-                    });
+                        sessionId = Guid.NewGuid().ToString();
+                        _logger.LogInformation($"Creating new cart_session_id: {sessionId}");
+                        HttpContext.Response.Cookies.Append("cart_session_id", sessionId, new CookieOptions
+                        {
+                            HttpOnly = true,
+                            Expires = DateTime.Now.AddDays(30),
+                            SameSite = SameSiteMode.Lax,
+                            Secure = false
+                        });
+                    }
+                    _logger.LogInformation($"Generated or retrieved SessionId: {sessionId}");
                 }
-
-                var userId = User.Identity.IsAuthenticated ?
-                    Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value) : (Guid?)null;
-
-                await _cartService.AddToCart(userId, sessionId, request);
-
+                else
+                {
+                    _logger.LogInformation($"Using existing cart_session_id: {sessionId}");
+                }
+                    await _cartService.AddToCart(userId, sessionId, request);
                 return Ok(new { message = "Товар успешно добавлен в корзину" });
             }
             catch (Exception ex)
@@ -59,13 +72,15 @@ namespace DevAPI.Controllers
         [HttpGet]
         public async Task<ActionResult<List<CartItemDto>>> GetCart()
         {
+            _logger.LogInformation($"Пользователь авторизоавн?: {User.Identity.IsAuthenticated}");
             var userId = User.Identity.IsAuthenticated ? 
                 Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value) : 
                 (Guid?)null;
-            
-            var sessionId = userId.HasValue ? 
-                null : 
-                HttpContext.Session.Id;
+
+            var sessionId = userId.HasValue
+                ? null
+                : HttpContext.Request.Cookies["cart_session_id"]
+                ?? HttpContext.Request.Headers["X-Session-Id"].FirstOrDefault();
 
             var cart = await _cartService.GetCart(userId, sessionId);
             return Ok(cart);
@@ -74,16 +89,24 @@ namespace DevAPI.Controllers
         [HttpDelete("{designId}")]
         public async Task<IActionResult> RemoveFromCart(Guid designId)
         {
-            var userId = User.Identity.IsAuthenticated ? 
-                Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value) : 
-                (Guid?)null;
-            
-            var sessionId = userId.HasValue ? 
-                null : 
-                HttpContext.Session.Id;
+            try
+            {
+                var userId = User.Identity.IsAuthenticated ?
+                    Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value) :
+                    (Guid?)null;
 
-            await _cartService.RemoveFromCart(userId, sessionId, designId);
-            return Ok();
+                var sessionId = userId.HasValue ?
+                    null :
+                    HttpContext.Request.Cookies["cart_session_id"];
+
+                await _cartService.RemoveFromCart(userId, sessionId, designId);
+                return Ok(new { message = "Товар успешно удален из корзины" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при удалении товара из корзины");
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpPut("{designId}")]
@@ -94,8 +117,8 @@ namespace DevAPI.Controllers
                 (Guid?)null;
             
             var sessionId = userId.HasValue ? 
-                null : 
-                HttpContext.Session.Id;
+                null :
+                HttpContext.Request.Cookies["cart_session_id"];
 
             await _cartService.UpdateQuantity(userId, sessionId, designId, quantity);
             return Ok();
@@ -106,9 +129,14 @@ namespace DevAPI.Controllers
         public async Task<IActionResult> MergeAnonymousCart()
         {
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var sessionId = HttpContext.Session.Id;
+            var sessionId = HttpContext.Request.Cookies["cart_session_id"];
 
-            await _cartService.MergeAnonymousCart(userId, sessionId);
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                await _cartService.MergeAnonymousCart(userId, sessionId);
+                HttpContext.Response.Cookies.Delete("cart_session_id"); // Очищаем куки после слияния
+            }
+
             return Ok();
         }
     }

@@ -1,33 +1,36 @@
 "use client"
 import { fabric } from 'fabric';
 import { toast } from 'sonner'
-import Image from 'next/image';
+import CryptoJS from 'crypto-js';
+//import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
+import useLayers from './Layers/useLayers';
 
-import ProductModal from './productModal';
+import ProductModal from './ProductModal/productModal';
 import TabbedControls from './tabbedControl';
+import LayersPanel from './Layers/LayersPanel';
 //import { dataURLtoBlob } from '@/app/utils/lib';
 
 const DesignProduct = () => {
-    interface Layer {
-        id: number | string;
-        type: 'image' | 'text';
-        image?: HTMLImageElement;
-        text?: string;
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        url?: string | ArrayBuffer | null;
-        fontSize?: number;
-        rotation?: number;
-    }
+    // interface Layer {
+    //     id: number | string;
+    //     type: 'image' | 'text';
+    //     image?: HTMLImageElement;
+    //     text?: string;
+    //     x: number;
+    //     y: number;
+    //     width: number;
+    //     height: number;
+    //     url?: string | ArrayBuffer | null;
+    //     fontSize?: number;
+    //     rotation?: number;
+    // }
     
     const [selectedProduct, setSelectedProduct] = useState<{id: string; type: string} | null>(null);
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [selectedObject, setSelectedObject] = useState<fabric.Object | null>(null);
-    const [layers, setLayers] = useState<Layer[]>([]);
-    const [selectedLayerId, setSelectedLayerId] = useState<number | string | null>(null);
+    //const [layers, setLayers] = useState<Layer[]>([]);
+    //const [selectedLayerId, setSelectedLayerId] = useState<number | string | null>(null);
     const [currentText, setCurrentText] = useState('Your Text Here');
     const [backgroundColor] = useState('#FFFFFF');
     // const canvasContainerRef = useRef<HTMLDivElement | null>(null);
@@ -39,6 +42,14 @@ const DesignProduct = () => {
     });
     const canvasRef = useRef<fabric.Canvas | null>(null);
     const objectsRef = useRef<fabric.Object[]>([]);
+
+    const {
+        layers,
+        selectedLayerId,
+        addLayer,
+        moveLayer,
+        setSelectedLayerId,
+    } = useLayers(canvasRef);
 
     const handleProductSelect = (productId: string, productType: string) => {
         setSelectedProduct({ id: productId, type: productType });
@@ -255,6 +266,7 @@ const DesignProduct = () => {
                 const scaleX = newWidth / img.width;
                 const scaleY = newHeight / img.height;
                 // const newHeight = newWidth / aspectRatio;
+                const layerId = 'layer-' + Date.now();
                 const fabricImage = new fabric.Image(img, {
                     left: (canvasSize.width - newWidth) / 2,
                     top: (canvasSize.height - newHeight) / 2,
@@ -264,6 +276,7 @@ const DesignProduct = () => {
                     evented: true,
                     hasBorders: true,
                     hasControls: true,
+                    data: { id: layerId }
                 });
                 const overlayImg = canvasRef.current?.overlayImage;
                 if (overlayImg && overlayImg.width && overlayImg.height) {
@@ -292,19 +305,18 @@ const DesignProduct = () => {
                 objectsRef.current = canvasRef.current?.getObjects() || [];
 
             // Обновляем слои (если используете для интерфейса)
-            setLayers((prevLayers) => [
-                ...prevLayers,
-                { 
-                    id: 'layer-' + Date.now(),
-                    type: 'image',
-                    image: img,
-                    x: fabricImage.left || 0,
-                    y: fabricImage.top || 0,
-                    width: newWidth,
-                    height: newHeight,
-                    url: reader.result,
-                },
-            ]);
+                addLayer(
+                    { 
+                        id: layerId,
+                        type: 'image',
+                        image: img,
+                        x: fabricImage.left || 0,
+                        y: fabricImage.top || 0,
+                        width: newWidth,
+                        height: newHeight,
+                        url: reader.result,
+                    },
+                );
             };
         };
 
@@ -312,10 +324,12 @@ const DesignProduct = () => {
     };
 
     const handleAddText = () => {
+        const layerId = 'layer-' + Date.now();
         const text = new fabric.Text(currentText, {
             left: canvasSize.width / 2,
             top: canvasSize.height / 2,
             fontSize: 30,
+            data: { id: layerId }
         });
 
         const overlayImg = canvasRef.current?.overlayImage;
@@ -332,10 +346,9 @@ const DesignProduct = () => {
         }
         canvasRef.current?.add(text);
         objectsRef.current = canvasRef.current?.getObjects() || [];
-        setLayers((prevLayers) => [
-            ...prevLayers,
+        addLayer(
             { 
-                id: 'layer-' + Date.now(), 
+                id: layerId, 
                 type: 'text', 
                 text: currentText, 
                 x: text.left || 0, 
@@ -344,7 +357,7 @@ const DesignProduct = () => {
                 width: text.width || 200,
                 height: text.height || 30
             }
-        ]);
+        );
         setCurrentText('');
     };
 
@@ -443,6 +456,8 @@ const DesignProduct = () => {
                 }))
             };
 
+            const designHash = CryptoJS.SHA256(JSON.stringify(designData)).toString();
+
             // Создаем объект для корзины с полученным URL изображения
             const cartItem = {
                 design: {
@@ -450,18 +465,21 @@ const DesignProduct = () => {
                     description: "Пользовательский дизайн",
                     previewUrl: imageUrl, // Используем полученный URL вместо base64
                     designData: JSON.stringify(designData),
-                    productType: selectedProduct?.id ,
+                    designHash: designHash,
+                    productType: selectedProduct?.id,
                     designType: "Custom"
                 },
                 quantity: 1,
                 price: 1000 // Здесь нужна логика расчета цены
             };
 
+            const token = localStorage.getItem('token');
             // Добавляем в корзину
             const cartResponse = await fetch('/api/cart/add', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(cartItem)
             });
@@ -483,41 +501,41 @@ const DesignProduct = () => {
         console.log(canvasRef.current?.getObjects());
     }
 
-    const moveLayer = (index: number, direction: number) => {
-        let hasMovedOnce = false;
-        setLayers((prevLayers) => {
-            const newLayers = [...prevLayers];
-            const targetIndex = index + direction;
+    // const moveLayer = (index: number, direction: number) => {
+    //     let hasMovedOnce = false;
+    //     setLayers((prevLayers) => {
+    //         const newLayers = [...prevLayers];
+    //         const targetIndex = index + direction;
     
-            if (targetIndex >= 0 && targetIndex < newLayers.length) {
-                // Меняем местами слои
-                [newLayers[index], newLayers[targetIndex]] = [newLayers[targetIndex], newLayers[index]];
+    //         if (targetIndex >= 0 && targetIndex < newLayers.length) {
+    //             // Меняем местами слои
+    //             [newLayers[index], newLayers[targetIndex]] = [newLayers[targetIndex], newLayers[index]];
     
-                // Обновляем порядок объектов на канвасе
-                const canvas = canvasRef.current;
-                if (canvas && !hasMovedOnce) {
-                    const objects = canvas.getObjects().filter((obj) => obj.type === 'image' || obj.type === 'text');
-                    const currentObject = objects[index];
+    //             // Обновляем порядок объектов на канвасе
+    //             const canvas = canvasRef.current;
+    //             if (canvas && !hasMovedOnce) {
+    //                 const objects = canvas.getObjects().filter((obj) => obj.type === 'image' || obj.type === 'text');
+    //                 const currentObject = objects[index];
     
-                    if (currentObject) {
-                        if (direction > 0) {
-                            canvas.bringForward(currentObject);
-                        } else {
-                            canvas.sendBackwards(currentObject);
-                        }
-                    }
-                    canvas.renderAll();
+    //                 if (currentObject) {
+    //                     if (direction > 0) {
+    //                         canvas.bringForward(currentObject);
+    //                     } else {
+    //                         canvas.sendBackwards(currentObject);
+    //                     }
+    //                 }
+    //                 canvas.renderAll();
     
-                    // Обновляем массив объектов в ref
-                    objectsRef.current = canvas.getObjects().filter((obj) => obj.type === 'image' || obj.type === 'text');
-                    hasMovedOnce = true;
-                }
+    //                 // Обновляем массив объектов в ref
+    //                 objectsRef.current = canvas.getObjects().filter((obj) => obj.type === 'image' || obj.type === 'text');
+    //                 hasMovedOnce = true;
+    //             }
     
-                return newLayers;
-            }
-            return prevLayers;
-        });
-    };
+    //             return newLayers;
+    //         }
+    //         return prevLayers;
+    //     });
+    // };
     
     return (
         <div style={{ display: 'flex', justifyContent:'space-between' }}>
@@ -528,7 +546,7 @@ const DesignProduct = () => {
                 onSelectProduct={handleProductSelect}
             />
 
-            <div style={{ width: '200px', marginRight: '20px' }}>
+            {/* <div style={{ width: '200px', marginRight: '20px' }}>
                 <h3>Layers</h3>
                 {layers.slice().reverse().map((layer) => (
                     <div 
@@ -561,7 +579,13 @@ const DesignProduct = () => {
                         </div>
                     </div>
                 ))}
-            </div>
+            </div> */}
+            <LayersPanel
+                layers={layers}
+                selectedLayerId={selectedLayerId}
+                onSelectLayer={handleSelectLayer}
+                onMoveLayer={moveLayer}
+            />
 
             <div>
                 <canvas id="canvas" style={{border: '1px solid black'}}></canvas>

@@ -3,6 +3,7 @@ import "@/app/globals.css";
 
 import { Toaster } from 'sonner'
 import { AuthProvider } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
 
 import Header from "./Header/Header";
 import Footer from "./Footer/Footer";
@@ -23,12 +24,14 @@ export default function RootLayout({
     <html lang="ru">
       <body>
       <AuthProvider>
-        <Header />
-          <main>
-            {children}
-            <Toaster expand={true} position="bottom-left" richColors closeButton/>
-          </main>
-        <Footer />
+        <CartProvider>
+          <Header />
+            <main>
+              {children}
+              <Toaster expand={true} position="bottom-left" richColors closeButton/>
+            </main>
+          <Footer />
+        </CartProvider>
       </AuthProvider>
       </body>
     </html>

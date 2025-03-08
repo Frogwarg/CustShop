@@ -15,20 +15,26 @@ namespace DevAPI.Services.Implementations
         private readonly IConfiguration _configuration;
         private readonly ITokenService _tokenService;
         private readonly IEmailService _emailService;
+        private readonly ICartService _cartService;
         private readonly ILogger<AuthService> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public AuthService(
             UserManager<User> userManager,
             IConfiguration configuration,
             ITokenService tokenService,
             IEmailService emailService,
-            ILogger<AuthService> logger)
+            ICartService cartService,
+            ILogger<AuthService> logger,
+            IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
             _configuration = configuration;
             _tokenService = tokenService;
             _emailService = emailService;
+            _cartService = cartService;
             _logger = logger;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
@@ -46,6 +52,13 @@ namespace DevAPI.Services.Implementations
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
             await _userManager.UpdateAsync(user);
+
+            var sessionId = _httpContextAccessor.HttpContext?.Request.Cookies["cart_session_id"];
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                await _cartService.MergeAnonymousCart(user.Id, sessionId);
+                _httpContextAccessor.HttpContext?.Response.Cookies.Delete("cart_session_id");
+            }
 
             return new AuthResponse
             {
@@ -85,6 +98,13 @@ namespace DevAPI.Services.Implementations
             }
 
             await _userManager.AddToRoleAsync(user, "User");
+
+            var sessionId = _httpContextAccessor.HttpContext?.Request.Cookies["cart_session_id"];
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                await _cartService.MergeAnonymousCart(user.Id, sessionId);
+                _httpContextAccessor.HttpContext?.Response.Cookies.Delete("cart_session_id");
+            }
 
             return await LoginAsync(new LoginRequest { Email = request.Email, Password = request.Password });
         }

@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
 
 namespace DevAPI.Models.Entities
 {
@@ -9,7 +10,10 @@ namespace DevAPI.Models.Entities
         public Guid DesignTypeId { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        public JsonDocument DesignData { get; set; } // JSON data
+
+        [Column(TypeName = "jsonb")]
+        public string DesignData { get; set; } // JSON data
+        public string DesignHash { get; set; }
         public string PreviewUrl { get; set; }
         public string ProductType { get; set; }
         public DateTime CreatedAt { get; set; }

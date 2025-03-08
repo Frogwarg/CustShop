@@ -2,6 +2,7 @@
 import { useState, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 import Link from 'next/link';
 import { AxiosError } from 'axios';
 import authService from '../services/authService';
@@ -43,6 +44,7 @@ export default function Register() {
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState('');
   const { login } = useAuth();
+  const { refreshCart } = useCart();
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
@@ -121,6 +123,7 @@ export default function Register() {
       
       console.log('Ответ сервера:', response);
       await login(formData.email, formData.password);
+      await refreshCart();
       router.push('/');
     } catch (error: unknown) {
       const axiosError = error as AxiosError<ErrorResponse>; // Приведение типа

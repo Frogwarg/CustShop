@@ -7,7 +7,13 @@ export const useCart = () => {
 
     const fetchCart = async () => {
         try {
-            const response = await fetch('/api/cart');
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/cart', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             const data = await response.json();
             setCartItems(data);
         } catch (error) {

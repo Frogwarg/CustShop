@@ -28,7 +28,8 @@ builder.Services.AddCors(options =>
     {
         builder.WithOrigins("http://localhost:3000") // URL Next.js
                .AllowAnyHeader()
-               .AllowAnyMethod();
+               .AllowAnyMethod()
+               .AllowCredentials();
     });
 });
 builder.Services.AddIdentity<User, Role>(options => {
@@ -77,6 +78,7 @@ builder.Services.AddSession(options =>
 });
 
 // Регистрируем сервисы
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IImageStorageService, ImgBBStorageService>();
 builder.Services.AddScoped<IAuthService, AuthService>();

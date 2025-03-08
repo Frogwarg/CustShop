@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
         destination: 'http://localhost:5123/api/:path*'
       }
     ]
+  },
+  images: {
+    domains: ['i.ibb.co']
   }
 };
 

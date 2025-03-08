@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import "@/app/constructor/productModal.css";
+import "./productModal.css";
 
 interface Product {
     id: string;

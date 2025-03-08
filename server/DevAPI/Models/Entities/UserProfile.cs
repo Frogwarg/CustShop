@@ -1,4 +1,7 @@
-﻿namespace DevAPI.Models.Entities
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+
+namespace DevAPI.Models.Entities
 {
     public class UserProfile
     {
@@ -6,7 +9,9 @@
         public Guid UserId { get; set; }
         public string AvatarUrl { get; set; }
         public string Bio { get; set; }
-        public string Preferences { get; set; } // JSON data
+
+        [Column(TypeName = "jsonb")]
+        public JsonDocument Preferences { get; set; } // JSON data
         public DateTime LastLogin { get; set; }
 
         public User User { get; set; }
