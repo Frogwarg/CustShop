@@ -12,19 +12,6 @@ import LayersPanel from './Layers/LayersPanel';
 //import { dataURLtoBlob } from '@/app/utils/lib';
 
 const DesignProduct = () => {
-    // interface Layer {
-    //     id: number | string;
-    //     type: 'image' | 'text';
-    //     image?: HTMLImageElement;
-    //     text?: string;
-    //     x: number;
-    //     y: number;
-    //     width: number;
-    //     height: number;
-    //     url?: string | ArrayBuffer | null;
-    //     fontSize?: number;
-    //     rotation?: number;
-    // }
     
     const [selectedProduct, setSelectedProduct] = useState<{id: string; type: string} | null>(null);
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -48,6 +35,8 @@ const DesignProduct = () => {
         selectedLayerId,
         addLayer,
         moveLayer,
+        removeLayer,
+        toggleLayerVisibility,
         setSelectedLayerId,
     } = useLayers(canvasRef);
 
@@ -363,6 +352,14 @@ const DesignProduct = () => {
 
     const handleSelectLayer = (layerId: number | string) => {
         setSelectedLayerId(layerId);
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const obj = canvas.getObjects().find((o) => o.data?.id === layerId);
+            if (obj) {
+                canvas.setActiveObject(obj); // Выделяем объект на канвасе
+                canvas.renderAll();
+            }
+        }
     };
 
     useEffect(() => {
@@ -370,49 +367,71 @@ const DesignProduct = () => {
         if (!canvas) return;
     
         // Словарь для хранения начальных z-index объектов
-        const objectZIndices: Map<fabric.Object, number> = new Map();
+        const originalIndices = new Map<fabric.Object, number>();
     
         const handleSelection = (event: fabric.IEvent) => {
             const target = event.selected ? event.selected[0] : null; // Получаем первый объект из массива selected
-            if (target) {
+            if (target && target.data?.id) {
                 // Перемещаем объект на самый верх
+                //const originalIndex = canvas.getObjects().indexOf(target);
+                const canvasIndex = canvas.getObjects().indexOf(target);
+                originalIndices.set(target, canvasIndex);
+
+                // Перемещаем объект наверх
                 canvas.bringToFront(target);
-        
-                // Сохраняем текущий z-index объекта
-                const index = canvas.getObjects().indexOf(target);
-                objectZIndices.set(target, index);
                 setSelectedObject(target);
+                setSelectedLayerId(target.data.id);
+                canvas.renderAll();
             }
         };
         
+        const restoreLayerOrder = () => {
+            const userObjects = canvas
+                .getObjects()
+                .filter((obj) => obj.data?.id && (obj.type === 'image' || obj.type === 'text'));
+            layers.forEach((layer, index) => {
+                const obj = userObjects.find((o) => o.data?.id === layer.id);
+                if (obj) {
+                    const baseIndex = canvas.getObjects().indexOf(userObjects[0]);
+                    canvas.moveTo(obj, baseIndex + index);
+                }
+            });
+            canvas.renderAll();
+        };
+
         const handleDeselection = (event: fabric.IEvent) => {
             const deselected = event.deselected; // Массив снятых объектов
-            
-        
             if (deselected && deselected.length > 0) {
                 deselected.forEach((target) => {
-                    if (objectZIndices.has(target)) {
+                    if (originalIndices.has(target)) {
                         // Возвращаем объект на исходный z-index
-                        const originalIndex = objectZIndices.get(target)!;
+                        const originalIndex = originalIndices.get(target)!;
                         canvas.remove(target);
                         canvas.insertAt(target, originalIndex, false);
-                        objectZIndices.delete(target);
-                        setSelectedObject(null);
+                        originalIndices.delete(target);
                     }
                 });
+
+                setSelectedObject(null);
+                setSelectedLayerId(null);
+
+                // Синхронизируем layers с порядком на канвасе после возвращения
+                restoreLayerOrder();
             }
         };
     
         // Подписываемся на события
         canvas.on('selection:created', handleSelection);
+        canvas.on('selection:updated', handleSelection);
         canvas.on('selection:cleared', handleDeselection);
     
         // Отписываемся от событий при размонтировании
         return () => {
             canvas.off('selection:created', handleSelection);
+            canvas.off('selection:updated', handleSelection);
             canvas.off('selection:cleared', handleDeselection);
         };
-    }, []);
+    }, [setSelectedLayerId, layers]);
 
     const saveDesign = async () => {
         if (!canvasRef.current) return;
@@ -498,45 +517,10 @@ const DesignProduct = () => {
     };
 
     const getAllObjects = () =>{
-        console.log(canvasRef.current?.getObjects());
+        console.log('Canvas Objects:', canvasRef.current?.getObjects());
+        console.log('Layers:', layers);
     }
 
-    // const moveLayer = (index: number, direction: number) => {
-    //     let hasMovedOnce = false;
-    //     setLayers((prevLayers) => {
-    //         const newLayers = [...prevLayers];
-    //         const targetIndex = index + direction;
-    
-    //         if (targetIndex >= 0 && targetIndex < newLayers.length) {
-    //             // Меняем местами слои
-    //             [newLayers[index], newLayers[targetIndex]] = [newLayers[targetIndex], newLayers[index]];
-    
-    //             // Обновляем порядок объектов на канвасе
-    //             const canvas = canvasRef.current;
-    //             if (canvas && !hasMovedOnce) {
-    //                 const objects = canvas.getObjects().filter((obj) => obj.type === 'image' || obj.type === 'text');
-    //                 const currentObject = objects[index];
-    
-    //                 if (currentObject) {
-    //                     if (direction > 0) {
-    //                         canvas.bringForward(currentObject);
-    //                     } else {
-    //                         canvas.sendBackwards(currentObject);
-    //                     }
-    //                 }
-    //                 canvas.renderAll();
-    
-    //                 // Обновляем массив объектов в ref
-    //                 objectsRef.current = canvas.getObjects().filter((obj) => obj.type === 'image' || obj.type === 'text');
-    //                 hasMovedOnce = true;
-    //             }
-    
-    //             return newLayers;
-    //         }
-    //         return prevLayers;
-    //     });
-    // };
-    
     return (
         <div style={{ display: 'flex', justifyContent:'space-between' }}>
         
@@ -546,45 +530,13 @@ const DesignProduct = () => {
                 onSelectProduct={handleProductSelect}
             />
 
-            {/* <div style={{ width: '200px', marginRight: '20px' }}>
-                <h3>Layers</h3>
-                {layers.slice().reverse().map((layer) => (
-                    <div 
-                        key={layer.id}
-                        style={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'center', 
-                            marginBottom: '5px',
-                            backgroundColor: layer.id === selectedLayerId ? '#e0e0e0' : 'transparent' }}
-                        onClick={() => handleSelectLayer(layer.id)}
-                    >
-                        {layer.type === 'image' ? 
-                                (<Image src={layer.url as string} alt="layer thumbnail" width={50} height={50} style={{ objectFit: 'cover' }}/>) 
-                             :(<span>{`Text: "${layer.text}"`}</span>)
-                        }
-                        <div>
-                            <button onClick={(e) => {
-                                e.stopPropagation();
-                                moveLayer(layers.indexOf(layer), 1);
-                            }}>
-                                Up
-                            </button>
-                            <button onClick={(e) => {
-                                e.stopPropagation();
-                                moveLayer(layers.indexOf(layer), -1);
-                            }}>
-                                Down
-                            </button>
-                        </div>
-                    </div>
-                ))}
-            </div> */}
             <LayersPanel
                 layers={layers}
                 selectedLayerId={selectedLayerId}
                 onSelectLayer={handleSelectLayer}
                 onMoveLayer={moveLayer}
+                onRemoveLayer={removeLayer}
+                onToggleVisibility={toggleLayerVisibility}
             />
 
             <div>

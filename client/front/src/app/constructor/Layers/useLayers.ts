@@ -13,6 +13,7 @@ interface Layer {
     url?: string | ArrayBuffer | null;
     fontSize?: number;
     rotation?: number;
+    visible?: boolean;
 }
 
 const useLayers = (canvasRef: React.MutableRefObject<fabric.Canvas | null>) => {
@@ -20,7 +21,8 @@ const useLayers = (canvasRef: React.MutableRefObject<fabric.Canvas | null>) => {
     const [selectedLayerId, setSelectedLayerId] = useState<number | string | null>(null);
 
     const addLayer = (layer: Layer) => {
-        setLayers((prevLayers) => [...prevLayers, layer]);
+        const newLayer = { ...layer, visible: layer.visible !== undefined ? layer.visible : true };
+        setLayers((prevLayers) => [...prevLayers, newLayer]);
     };
 
     const moveLayer = (index: number, direction: number) => {
@@ -36,20 +38,16 @@ const useLayers = (canvasRef: React.MutableRefObject<fabric.Canvas | null>) => {
                 const canvas = canvasRef.current;
                 if (canvas) {
                     const objects = canvas.getObjects().filter((obj) => obj.data?.id); // Предполагаем, что у объектов есть data.id
-                    const currentLayer = newLayers[index];
-                    const targetLayer = newLayers[targetIndex];
+                    newLayers.forEach((layer, newIndex) => {
+                        const obj = objects.find((o) => o.data?.id === layer.id);
+                        if (obj) {
+                            // Перемещаем объект на нужный индекс среди пользовательских объектов
+                            const baseIndex = canvas.getObjects().indexOf(objects[0]); // Индекс первого пользовательского объекта
+                            canvas.moveTo(obj, baseIndex + newIndex);
+                        }
+                    });
 
-                    const currentObject = objects.find((obj) => obj.data?.id === currentLayer.id);
-                    const targetObject = objects.find((obj) => obj.data?.id === targetLayer.id);
-
-                    if (currentObject && targetObject) {
-                        const currentCanvasIndex = canvas.getObjects().indexOf(currentObject);
-                        const targetCanvasIndex = canvas.getObjects().indexOf(targetObject);
-
-                        // Перемещаем объект на канвасе
-                        canvas.moveTo(currentObject, targetCanvasIndex);
-                        canvas.renderAll();
-                    }
+                    canvas.renderAll();
                 }
 
                 return newLayers;
@@ -59,11 +57,57 @@ const useLayers = (canvasRef: React.MutableRefObject<fabric.Canvas | null>) => {
         });
     };
 
+    const removeLayer = (layerId: number | string) => {
+        setLayers((prevLayers) => {
+            const layerToRemove = prevLayers.find((layer) => layer.id === layerId);
+            if (!layerToRemove) return prevLayers;
+
+            const canvas = canvasRef.current;
+            if (canvas) {
+                const obj = canvas.getObjects().find((o) => o.data?.id === layerId);
+                if (obj) {
+                    canvas.remove(obj);
+                    canvas.renderAll();
+                }
+            }
+
+            const newLayers = prevLayers.filter((layer) => layer.id !== layerId);
+            return newLayers;
+        });
+
+        if (selectedLayerId === layerId) {
+            setSelectedLayerId(null);
+        }
+    };
+
+    const toggleLayerVisibility = (layerId: number | string) => {
+        setLayers((prevLayers) => {
+            const newLayers = prevLayers.map((layer) => {
+                if (layer.id === layerId) {
+                    const newVisibility = !layer.visible;
+                    const canvas = canvasRef.current;
+                    if (canvas) {
+                        const obj = canvas.getObjects().find((o) => o.data?.id === layerId);
+                        if (obj) {
+                            obj.visible = newVisibility; // Изменяем видимость объекта на канвасе
+                            canvas.renderAll();
+                        }
+                    }
+                    return { ...layer, visible: newVisibility };
+                }
+                return layer;
+            });
+            return newLayers;
+        });
+    };
+
     return {
         layers,
         selectedLayerId,
         addLayer,
         moveLayer,
+        removeLayer,
+        toggleLayerVisibility,
         setSelectedLayerId,
     };
 };

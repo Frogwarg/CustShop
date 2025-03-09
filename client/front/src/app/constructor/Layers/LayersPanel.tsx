@@ -6,6 +6,7 @@ interface Layer {
     type: 'image' | 'text';
     url?: string | ArrayBuffer | null;
     text?: string;
+    visible?: boolean;
 }
 
 interface LayersPanelProps {
@@ -13,9 +14,11 @@ interface LayersPanelProps {
     selectedLayerId: number | string | null;
     onSelectLayer: (layerId: number | string) => void;
     onMoveLayer: (index: number, direction: number) => void;
+    onRemoveLayer: (layerId: number | string) => void;
+    onToggleVisibility: (layerId: number | string) => void;
 }
 
-const LayersPanel: React.FC<LayersPanelProps> = ({ layers, selectedLayerId, onSelectLayer, onMoveLayer }) => {
+const LayersPanel: React.FC<LayersPanelProps> = ({ layers, selectedLayerId, onSelectLayer, onMoveLayer, onRemoveLayer, onToggleVisibility }) => {
     return (
         <div style={{ width: '200px', marginRight: '20px' }}>
             <h3>Layers</h3>
@@ -28,6 +31,7 @@ const LayersPanel: React.FC<LayersPanelProps> = ({ layers, selectedLayerId, onSe
                         alignItems: 'center',
                         marginBottom: '5px',
                         backgroundColor: layer.id === selectedLayerId ? '#e0e0e0' : 'transparent',
+                        opacity: layer.visible === false ? 0.5 : 1
                     }}
                     onClick={() => onSelectLayer(layer.id)}
                 >
@@ -42,6 +46,12 @@ const LayersPanel: React.FC<LayersPanelProps> = ({ layers, selectedLayerId, onSe
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); onMoveLayer(layers.indexOf(layer), -1); }}>
                             Down
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); onToggleVisibility(layer.id); }}>
+                            {layer.visible === false ? 'Show' : 'Hide'}
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); onRemoveLayer(layer.id); }}>
+                            Delete
                         </button>
                     </div>
                 </div>
