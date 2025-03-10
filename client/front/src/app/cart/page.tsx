@@ -1,5 +1,6 @@
 'use client'
 import { useCart } from '@/app/contexts/CartContext';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 interface CartItem {
@@ -20,10 +21,15 @@ export default function Cart() {
         loading: boolean;
         removeFromCart: (designId: string) => Promise<void>;
     };
+    const router = useRouter();
 
     if (loading) {
         return <div>Загрузка корзины...</div>;
     }
+
+    const editDesign = (designId: string) => {
+        router.push(`/constructor?designId=${designId}`);
+    };
 
     return (
         <div>
@@ -41,6 +47,9 @@ export default function Cart() {
                             />
                             <div>Количество: {item.quantity}</div>
                             <div>Цена: {item.price} руб.</div>
+                            <button onClick={() => editDesign(item.design.id)}>
+                                Редактировать дизайн
+                            </button>
                             <button onClick={() => removeFromCart(item.design.id)}>
                                 Удалить
                             </button>

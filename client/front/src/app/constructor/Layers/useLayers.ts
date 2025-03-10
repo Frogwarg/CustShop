@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { fabric } from 'fabric';
 
-interface Layer {
+export interface Layer {
     id: number | string;
     type: 'image' | 'text';
     image?: HTMLImageElement;
@@ -81,24 +81,22 @@ const useLayers = (canvasRef: React.MutableRefObject<fabric.Canvas | null>) => {
     };
 
     const toggleLayerVisibility = (layerId: number | string) => {
-        setLayers((prevLayers) => {
-            const newLayers = prevLayers.map((layer) => {
-                if (layer.id === layerId) {
-                    const newVisibility = !layer.visible;
-                    const canvas = canvasRef.current;
-                    if (canvas) {
-                        const obj = canvas.getObjects().find((o) => o.data?.id === layerId);
-                        if (obj) {
-                            obj.visible = newVisibility; // Изменяем видимость объекта на канвасе
-                            canvas.renderAll();
-                        }
-                    }
-                    return { ...layer, visible: newVisibility };
-                }
-                return layer;
-            });
-            return newLayers;
-        });
+        setLayers((prevLayers) =>
+            prevLayers.map((layer) =>
+                layer.id === layerId ? { ...layer, visible: !layer.visible } : layer
+            )
+        );
+    
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const obj = canvas.getObjects().find((o) => o.data?.id === layerId);
+            if (obj) {
+                obj.set({ visible: !obj.visible }); // Обновляем видимость объекта
+                console.log('layer.id:', layerId);
+                console.log('new obj', obj);
+                canvas.renderAll();
+            }
+        }
     };
 
     return {
@@ -109,6 +107,7 @@ const useLayers = (canvasRef: React.MutableRefObject<fabric.Canvas | null>) => {
         removeLayer,
         toggleLayerVisibility,
         setSelectedLayerId,
+        setLayers
     };
 };
 
