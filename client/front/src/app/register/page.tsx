@@ -45,6 +45,8 @@ export default function Register() {
   const [serverError, setServerError] = useState('');
   const { login } = useAuth();
   const { refreshCart } = useCart();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
@@ -207,33 +209,42 @@ export default function Register() {
               {errors.phoneNumber && <p className={errorClassName}>{errors.phoneNumber}</p>}
             </div>
 
-            <div>
+            <div className="relative">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="Пароль"
                 value={formData.password}
                 onChange={handleChange}
                 className={inputClassName}
               />
-              {errors.password && <p className={errorClassName}>{errors.password}</p>}
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-gray-500"
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </button>
             </div>
 
-            <div>
+            <div className="relative">
               <input
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 name="confirmPassword"
                 placeholder="Подтвердите пароль"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 className={inputClassName}
               />
-              {errors.confirmPassword && (
-                <p className={errorClassName}>{errors.confirmPassword}</p>
-              )}
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-3 text-gray-500"
+              >
+                {showConfirmPassword ? "🙈" : "👁️"}
+              </button>
             </div>
           </div>
-
           <div>
             <button
               type="submit"

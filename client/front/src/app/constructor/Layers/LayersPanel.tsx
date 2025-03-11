@@ -36,9 +36,12 @@ const LayersPanel: React.FC<LayersPanelProps> = ({ layers, selectedLayerId, onSe
                     onClick={() => onSelectLayer(layer.id)}
                 >
                     {layer.type === 'image' ? (
-                        <Image src={layer.url as string} alt="layer thumbnail" width={50} height={50} style={{ objectFit: 'cover' }} />
+                        <div>
+                            <Image src={layer.url as string} alt="layer thumbnail" width={50} height={50} style={{ objectFit: 'cover' }} />
+                            <span>Изображение</span>
+                        </div>
                     ) : (
-                        <span>{`Text: "${layer.text}"`}</span>
+                        <span>{`Текст: "${layer.text}"`}</span>
                     )}
                     <div>
                         <button onClick={(e) => { e.stopPropagation(); onMoveLayer(layers.indexOf(layer), 1); }}>

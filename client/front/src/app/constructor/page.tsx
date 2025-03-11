@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 //import Image from 'next/image';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import useLayers from './Layers/useLayers';
+import { saveStateToIndexedDB, getStateFromIndexedDB, clearStateFromIndexedDB } from '@/app/utils/db';
 
 import ProductModal from './ProductModal/productModal';
 import TabbedControls from './tabbedControl';
@@ -44,7 +45,8 @@ const DesignProduct = () => {
 
     useEffect(() => {
         const initializeCanvasAndLayers = async () => {
-            const savedState = localStorage.getItem('designState');
+            // const savedState = localStorage.getItem('designState');
+            const savedState = await getStateFromIndexedDB();
             if (!canvasRef.current) {
                 const canvas = new fabric.Canvas('canvas', {
                     width: canvasSize.width,
@@ -100,9 +102,9 @@ const DesignProduct = () => {
             }
 
             const canvas = canvasRef.current!;
-            canvas.getObjects().forEach((obj) => {
-                if (obj !== canvas.overlayImage) canvas.remove(obj);
-            });
+            // canvas.getObjects().forEach((obj) => {
+            //     if (obj !== canvas.overlayImage) canvas.remove(obj);
+            // });
             // Восстанавливаем слои
             for (const layer of savedLayers) {
                 if (layer.type === 'image' && typeof layer.url === 'string') {
@@ -187,9 +189,10 @@ const DesignProduct = () => {
         };
     
         initializeCanvasAndLayers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     
-    const saveStateToLocalStorage = useCallback(() => {
+    const saveStateToLocalStorage = useCallback(async () => {
         const state = {
             selectedProduct,
             layers,
@@ -197,7 +200,8 @@ const DesignProduct = () => {
             currentText,
             canvasSize
         };
-        localStorage.setItem('designState', JSON.stringify(state));
+        await saveStateToIndexedDB(JSON.stringify(state));
+        // localStorage.setItem('designState', JSON.stringify(state));
     }, [selectedProduct, layers, selectedLayerId, currentText, canvasSize]);
     
     useEffect(() => {
@@ -374,6 +378,7 @@ const DesignProduct = () => {
     
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Теперь этот эффект запускается только при монтировании
     
     
@@ -449,6 +454,9 @@ const DesignProduct = () => {
                         url: reader.result,
                     },
                 );
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                }
             };
         };
 
@@ -703,7 +711,7 @@ const DesignProduct = () => {
         console.log('Layers:', layers);
     }
 
-    const resetDesign = () => {
+    const resetDesign = async () => {
         if (canvasRef.current) {
           canvasRef.current.clear();
           canvasRef.current.backgroundColor = backgroundColor;
@@ -728,7 +736,8 @@ const DesignProduct = () => {
         setSelectedLayerId(null);
         setCurrentText('Your Text Here');
         layers.forEach((layer) => removeLayer(layer.id));
-        localStorage.removeItem('designState');
+        await clearStateFromIndexedDB();
+        // localStorage.removeItem('designState');
 
         if (fileInputRef.current) {
             fileInputRef.current.value = "";

@@ -19,6 +19,7 @@ interface CartContextType {
     loading: boolean;
     refreshCart: () => Promise<void>;
     removeFromCart: (designId: string) => Promise<void>;
+    updateQuantity: (designId: string, quantity: number) => Promise<void>;
   }
 
   const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -70,12 +71,48 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (response.ok) {
-        await fetchCart(); // Обновляем корзину после удаления
+        // await fetchCart(); // Обновляем корзину после удаления
+        setCartItems((prevItems) => prevItems.filter((item) => item.design.id !== designId));
+      } else {
+        throw new Error('Failed to remove item');
       }
     } catch (error) {
       console.error(`Failed to remove item from cart: ${error}`);
+      await fetchCart();
     }
   };
+
+  const updateQuantity = async (designId: string, quantity: number) => {
+    try {
+
+        setCartItems((prevItems) =>
+            prevItems.map((item) =>
+                item.design.id === designId ? { ...item, quantity } : item
+            )
+        );
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/cart/${designId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(quantity)
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update quantity on server');
+        }
+    } catch (error) {
+      console.error(`Failed to update quantity: ${error}`);
+      // Здесь можно добавить уведомление пользователю об ошибке, но не перезагружать всю корзину
+      setCartItems((prevItems) =>
+          prevItems.map((item) =>
+              item.design.id === designId ? { ...item, quantity: item.quantity } : item
+          )
+      );
+    }
+};
 
   useEffect(() => {
     fetchCart(); // Загружаем корзину при монтировании
@@ -85,7 +122,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     cartItems,
     loading,
     refreshCart: fetchCart,
-    removeFromCart
+    removeFromCart,
+    updateQuantity
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -1,7 +1,7 @@
 'use client'
 import { useCart } from '@/app/contexts/CartContext';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+//import { useRouter } from 'next/navigation';
+import CartItem from './cartitem';
 
 interface CartItem {
     id: number;
@@ -16,19 +16,25 @@ interface CartItem {
 }
 
 export default function Cart() {
-    const { cartItems, loading, removeFromCart } = useCart() as {
+    const { cartItems, loading, removeFromCart, updateQuantity } = useCart() as {
         cartItems: CartItem[];
         loading: boolean;
         removeFromCart: (designId: string) => Promise<void>;
+        updateQuantity: (designId: string, quantity: number) => Promise<void>;
     };
-    const router = useRouter();
+    //const router = useRouter();
 
     if (loading) {
         return <div>Загрузка корзины...</div>;
     }
 
-    const editDesign = (designId: string) => {
-        router.push(`/constructor?designId=${designId}`);
+    // const editDesign = (designId: string) => {
+    //     router.push(`/constructor?designId=${designId}`);
+    // };
+
+    const handleQuantityChange = async (designId: string, newQuantity: number) => {
+        if (newQuantity < 1) return; // Предотвращаем установку количества меньше 1
+        await updateQuantity(designId, newQuantity);
     };
 
     return (
@@ -38,22 +44,13 @@ export default function Cart() {
             ) : (
                 <div>
                     {cartItems.map((item) => (
-                        <div key={item.design.id || `item-${Math.random()}`}>
-                            <Image 
-                                src={item.design.previewUrl || '/placeholder.png'} 
-                                alt={`Дизайн ${item.design.name || ''}`} 
-                                width={100} 
-                                height={100} 
-                            />
-                            <div>Количество: {item.quantity}</div>
-                            <div>Цена: {item.price} руб.</div>
-                            <button onClick={() => editDesign(item.design.id)}>
-                                Редактировать дизайн
-                            </button>
-                            <button onClick={() => removeFromCart(item.design.id)}>
-                                Удалить
-                            </button>
-                        </div>
+                        <CartItem
+                            key={item.design.id}
+                            item={item}
+                            //onEdit={editDesign}
+                            onRemove={removeFromCart}
+                            onQuantityChange={handleQuantityChange}
+                        />
                     ))}
                     <div>
                         Итого: {cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)} руб.

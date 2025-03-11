@@ -14,6 +14,8 @@ export interface Layer {
     fontSize?: number;
     rotation?: number;
     visible?: boolean;
+    scaleX?: number;
+    scaleY?: number;
 }
 
 const useLayers = (canvasRef: React.MutableRefObject<fabric.Canvas | null>) => {
