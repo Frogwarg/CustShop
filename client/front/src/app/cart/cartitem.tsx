@@ -15,10 +15,11 @@ interface CartItemProps {
     //onEdit: (designId: string) => void;
     onRemove: (designId: string) => void;
     onQuantityChange: (designId: string, quantity: number) => void;
+    onShare: (designId: string) => void;
 }
 
 const CartItem = React.memo(
-    ({ item, onRemove, onQuantityChange }: CartItemProps) => {
+    ({ item, onRemove, onQuantityChange, onShare }: CartItemProps) => {
         return (
             <div>
                 <Image
@@ -46,6 +47,7 @@ const CartItem = React.memo(
                 <div>Сумма: {item.price * item.quantity} руб.</div>
                 {/* <button onClick={() => onEdit(item.design.id)}>Редактировать дизайн</button> */}
                 <button onClick={() => onRemove(item.design.id)}>Удалить товар</button>
+                <button onClick={() => onShare(item.design.id)}>Поделиться товаром</button>
             </div>
         );
     },

@@ -14,6 +14,7 @@ namespace DevAPI.Data
         public DbSet<Role> Roles { get; set; }
         public DbSet<Design> Designs { get; set; }
         public DbSet<DesignHistory> DesignHistories { get; set; }
+        public DbSet<CatalogItem> CatalogItems { get; set; }
         public DbSet<DesignType> DesignTypes { get; set; }
         public DbSet<Discount> Discounts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
@@ -43,8 +44,7 @@ namespace DevAPI.Data
             modelBuilder.ApplyConfiguration(new Configurations.SavedAddressConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.OrderConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.OrderItemConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.CatalogItemConfiguration());
         }
-
     }
-
 }

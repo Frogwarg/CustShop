@@ -45,6 +45,11 @@ const Header = () => {
                                 <span className="hover:text-gray-300">Админ панель</span>
                                 </Link>
                             )}
+                            {hasRole('Moderator') && (
+                                <Link href="/moderation">
+                                <span className="hover:text-gray-300">Модерация</span>
+                                </Link>
+                            )}
                             <button
                                 onClick={logoutNew}
                                 className="hover:text-gray-300"

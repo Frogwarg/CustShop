@@ -2,6 +2,7 @@
 import { fabric } from 'fabric';
 import { toast } from 'sonner'
 import CryptoJS from 'crypto-js';
+
 import { useSearchParams } from 'next/navigation';
 //import Image from 'next/image';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
@@ -379,7 +380,7 @@ const DesignProduct = () => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Теперь этот эффект запускается только при монтировании
+    }, []);
     
     
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -742,7 +743,7 @@ const DesignProduct = () => {
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
-      };
+    };
 
     return (
         <div style={{ display: 'flex', justifyContent:'space-between' }}>

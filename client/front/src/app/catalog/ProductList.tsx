@@ -1,106 +1,72 @@
-"use client"
+"use client";
 
 import { useEffect, useState } from "react";
+import Image from 'next/image';
 
-interface Role {
-    id: number;
+interface Product {
+    id: string;
     name: string;
     description: string;
+    price: number;
+    discountedPrice?: number;
+    previewUrl: string;
+    tags?: string;
 }
 
-const Roles = () => {
-    const [roles, setRoles] = useState<Role[]>([]);
+const ProductList = () => {
+    const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
-    const [newRoleName, setNewRoleName] = useState("");
-    const [newRoleDescription, setNewRoleDescription] = useState("");
-    const [error, setError] = useState<string | null>(null);
+    const [selectedTag, setSelectedTag] = useState("");
 
     useEffect(() => {
-        const fetchRoles = async () => {
+        const fetchProducts = async () => {
             try {
-                const response = await fetch("http://localhost:5123/api/Roles", { method: "GET" });
-                if (!response.ok) console.error(`HTTP error! status: ${response.status}`);
+                const response = await fetch("http://localhost:5123/api/Catalog");
                 const data = await response.json();
-                setRoles(data);
-                console.log("Roles fetched:", data);
+                setProducts(data);
             } catch (error) {
-                console.error("Error fetching roles:", error);
+                console.error("Ошибка:", error);
             } finally {
                 setLoading(false);
             }
         };
-
-        fetchRoles();
+        fetchProducts();
     }, []);
 
-    const handleAddRole = async () => {
-        if (!newRoleName || !newRoleDescription) {
-            setError("Both name and description are required.");
-            return;
-        }
-        try {
-            const response = await fetch("http://localhost:5123/api/Roles", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    Name: newRoleName,
-                    Description: newRoleDescription,
-                    Permissions: "{\"canRead\": true, \"canWrite\": false}"
-                }),
-            });
+    const filteredProducts = selectedTag
+        ? products.filter((p) => p.tags?.split(",").includes(selectedTag))
+        : products;
 
-            if (!response.ok) {
-              const errorResponse = await response.json();
-              console.error("Error response:", errorResponse); // Посмотрим на ошибку с сервера
-              throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
-            const newRole = await response.json();
-            setRoles((prevRoles) => [...prevRoles, newRole]);
-            setNewRoleName("");
-            setNewRoleDescription("");
-            setError(null);
-        } catch (error) {
-            console.error("Error adding role:", error);
-            setError("Failed to add new role.");
-        }
-    };
-
-    if (loading) return <p>Loading roles...</p>;
+    if (loading) return <p>Загрузка...</p>;
+    if (filteredProducts.length === 0) return <p>Товаров нет.</p>;
 
     return (
         <div>
-            <h1>Roles</h1>
-            <ul>
-                {roles.map((role) => (
-                    <li key={role.id}>
-                        <strong>{role.name}</strong>: {role.description}
-                    </li>
+            <h1>Каталог</h1>
+            <select onChange={(e) => setSelectedTag(e.target.value)}>
+                <option value="">Все теги</option>
+                {Array.from(new Set(products.flatMap((p) => p.tags?.split(",")))).map((tag) => (
+                    <option key={tag} value={tag}>{tag}</option>
                 ))}
-            </ul>
-
-            <h2>Add New Role</h2>
-            <div>
-                <input
-                    type="text"
-                    placeholder="Role Name"
-                    value={newRoleName}
-                    onChange={(e) => setNewRoleName(e.target.value)}
-                />
-                <input
-                    type="text"
-                    placeholder="Role Description"
-                    value={newRoleDescription}
-                    onChange={(e) => setNewRoleDescription(e.target.value)}
-                />
-                <button onClick={handleAddRole}>Add Role</button>
-                {error && <p style={{ color: "red" }}>{error}</p>}
-            </div>
+            </select>
+            {filteredProducts.map((product) => (
+                <div key={product.id} style={{ border: "1px solid #ccc", margin: "10px", padding: "10px" }}>
+                    <h2>{product.name}</h2>
+                    <p>{product.description}</p>
+                    <p>Цена: ${product.discountedPrice || product.price}</p>
+                    <div style={{ position: 'relative', width: '200px', height: '200px' }}>
+                        <Image 
+                            src={product.previewUrl} 
+                            alt={product.name} 
+                            fill
+                            style={{ objectFit: 'contain' }}
+                        />
+                    </div>
+                    <button onClick={() => alert(`Добавить ${product.name} в корзину`)}>В корзину</button>
+                </div>
+            ))}
         </div>
     );
-    if (roles.length === 0) return <p>No roles available.</p>;
 };
 
-export default Roles;
+export default ProductList;

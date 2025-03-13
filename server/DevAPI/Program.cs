@@ -85,6 +85,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IDesignService, DesignService>();
+builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<RoleManager<Role>>();
 
 builder.Services.AddControllers();
@@ -93,6 +95,7 @@ var app = builder.Build();
 
 await RoleSeeder.SeedRoles(app.Services);
 await AdminSeeder.SeedAdminAsync(app.Services);
+await ModeratorSeeder.SeedModeratorAsync(app.Services);
 
 app.UseSession();
 app.UseRouting();

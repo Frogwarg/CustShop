@@ -1,7 +1,13 @@
 'use client'
+import { toast } from 'sonner';
+
 import { useCart } from '@/app/contexts/CartContext';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { useState } from 'react';
 //import { useRouter } from 'next/navigation';
 import CartItem from './cartitem';
+import ShareDesignForm from './ShareDesign/ShareDesignForm';
+
 
 interface CartItem {
     id: number;
@@ -22,6 +28,8 @@ export default function Cart() {
         removeFromCart: (designId: string) => Promise<void>;
         updateQuantity: (designId: string, quantity: number) => Promise<void>;
     };
+    const { isAuthenticated } = useAuth();
+    const [shareFormDesignId, setShareFormDesignId] = useState<string | null>(null);
     //const router = useRouter();
 
     if (loading) {
@@ -37,6 +45,14 @@ export default function Cart() {
         await updateQuantity(designId, newQuantity);
     };
 
+    const handleShare = (designId: string) => {
+        if (!isAuthenticated) {
+            toast.error("Пожалуйста, войдите в систему, чтобы поделиться дизайном.");
+            return;
+        }
+        setShareFormDesignId(designId); // Открываем форму для выбранного дизайна
+    };
+
     return (
         <div>
             {cartItems.length === 0 ? (
@@ -50,12 +66,20 @@ export default function Cart() {
                             //onEdit={editDesign}
                             onRemove={removeFromCart}
                             onQuantityChange={handleQuantityChange}
+                            onShare={handleShare}
                         />
                     ))}
                     <div>
                         Итого: {cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)} руб.
                     </div>
                 </div>
+            )}
+            {shareFormDesignId && (
+                <ShareDesignForm
+                    designId={shareFormDesignId}
+                    onClose={() => setShareFormDesignId(null)}
+                    onSubmit={() => setShareFormDesignId(null)}
+                />
             )}
         </div>
     );

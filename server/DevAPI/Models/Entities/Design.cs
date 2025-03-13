@@ -18,6 +18,10 @@ namespace DevAPI.Models.Entities
         public string ProductType { get; set; }
         public DateTime CreatedAt { get; set; }
 
+        public string ModerationStatus { get; set; } = "Draft"; // "Draft", "Pending", "Approved", "Rejected"
+        public DateTime? SubmittedForModerationAt { get; set; }
+        public string ModeratorComment { get; set; }
+
         public User User { get; set; }
         public DesignType DesignType { get; set; }
         public ICollection<DesignHistory> DesignHistories { get; set; }
