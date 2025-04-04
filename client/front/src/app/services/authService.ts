@@ -73,6 +73,53 @@ const authService = {
   getToken() {
     return localStorage.getItem('token');
   },
+  async refreshToken(): Promise<AuthResponse | null> {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (!refreshToken) return null;
+
+    try {
+      const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken }, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      });
+
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("refreshToken", response.data.refreshToken);
+        return response.data;
+      }
+      return null;
+    } catch (error) {
+      console.error("Ошибка обновления токена:", error);
+      return null;
+    }
+  },
+
+  // Утилита для выполнения авторизованных запросов с обновлением токена
+  async fetchWithRefresh(url: string, options: RequestInit = {}): Promise<Response> {
+    const token = localStorage.getItem("token");
+    const headers = {
+      ...options.headers,
+      Authorization: `Bearer ${token}`,
+    };
+
+    let response = await fetch(url, { ...options, headers });
+
+    if (response.status === 401) {
+      const newTokenData = await this.refreshToken();
+      if (newTokenData) {
+        headers.Authorization = `Bearer ${newTokenData.token}`;
+        response = await fetch(url, { ...options, headers });
+      } else {
+        this.logout();
+        throw new Error("Токен истёк, требуется повторный вход");
+      }
+    }
+
+    return response;
+  },
 
   isAuthenticated() {
     return !!this.getToken();

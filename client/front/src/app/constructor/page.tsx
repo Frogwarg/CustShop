@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 //import Image from 'next/image';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import useLayers from './Layers/useLayers';
+import authService from '../services/authService';
 import { saveStateToIndexedDB, getStateFromIndexedDB, clearStateFromIndexedDB } from '@/app/utils/db';
 
 import ProductModal from './ProductModal/productModal';
@@ -664,6 +665,36 @@ const DesignProduct = () => {
 
             const designHash = CryptoJS.SHA256(JSON.stringify(designData)).toString();
 
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Токен авторизации отсутствует');
+            }
+
+            // Сохраняем дизайн в историю
+            const designRequest = {
+                name: `Дизайн ${new Date().toLocaleString()}`,
+                description: 'Пользовательский дизайн',
+                previewUrl: imageUrl,
+                designData: JSON.stringify(designData),
+                designHash: designHash,
+                productType: selectedProduct?.id || 'unknown',
+            };
+
+            const saveDesignResponse = await authService.fetchWithRefresh('/api/profile/designs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(designRequest),
+            });
+    
+            if (!saveDesignResponse.ok) {
+                const errorText = await saveDesignResponse.text();
+                throw new Error(`Ошибка сохранения в историю: ${saveDesignResponse.status} - ${errorText}`);
+            }
+
+            const savedDesign = await saveDesignResponse.json();
             // Создаем объект для корзины с полученным URL изображения
             const cartItem = {
                 design: {
@@ -671,7 +702,7 @@ const DesignProduct = () => {
                     name: `Дизайн ${new Date().toLocaleString()}`,
                     description: "Пользовательский дизайн",
                     previewUrl: imageUrl, // Используем полученный URL вместо base64
-                    designData: JSON.stringify(designData),
+                    designData: designRequest.designData,
                     designHash: designHash,
                     productType: selectedProduct?.id,
                     designType: "Custom"
@@ -680,7 +711,6 @@ const DesignProduct = () => {
                 price: 1000 // Здесь нужна логика расчета цены
             };
 
-            const token = localStorage.getItem('token');
             const endpoint = designId ? `/api/cart/update/${designId}` : '/api/cart/add';
             const method = designId ? 'PUT' : 'POST';
             

@@ -10,5 +10,6 @@ namespace DevAPI.Services.Interfaces
         Task<AuthResponse> RegisterAsync(Models.DTOs.RegisterRequest request);
         Task<bool> ForgotPasswordAsync(string email);
         Task<bool> ResetPasswordAsync(string email, string token, string newPassword);
+        Task<AuthResponse> RefreshTokenAsync(string refreshToken);
     }
 }

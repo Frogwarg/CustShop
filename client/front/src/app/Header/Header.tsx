@@ -41,30 +41,43 @@ const Header = () => {
                             <>
                             {/* Показываем кнопку админки только админам */}
                             {hasRole('Admin') && (
-                                <Link href="/adminpanel">
-                                <span className="hover:text-gray-300">Админ панель</span>
-                                </Link>
+                                <li>
+                                    <Link href="/adminpanel">
+                                        <span className="hover:text-gray-300">Админ панель</span>
+                                    </Link>
+                                </li>
                             )}
                             {hasRole('Moderator') && (
-                                <Link href="/moderation">
-                                <span className="hover:text-gray-300">Модерация</span>
-                                </Link>
+                                <li>
+                                    <Link href="/moderation">
+                                        <span className="hover:text-gray-300">Модерация</span>
+                                    </Link>
+                                </li>
                             )}
-                            <button
-                                onClick={logoutNew}
-                                className="hover:text-gray-300"
-                            >
-                                Выйти
-                            </button>
+                            
+                            <li>
+                                <Link href="/profile">
+                                    <span className="hover:text-gray-300">Профиль</span>
+                                </Link>
+                                <button
+                                    onClick={logoutNew}
+                                    className="hover:text-gray-300"
+                                >Выйти
+                                </button>
+                            </li>
                             </>
                         ) : (
                             <>
-                            <Link href="/login">
-                                <span className="hover:text-gray-300">Войти</span>
-                            </Link>
-                            <Link href="/register">
-                                <span className="hover:text-gray-300">Регистрация</span>
-                            </Link>
+                            <li>
+                                <Link href="/login">
+                                    <span className="hover:text-gray-300">Войти</span>
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/register">
+                                    <span className="hover:text-gray-300">Регистрация</span>
+                                </Link>
+                            </li>
                             </>
                         )}
                         <li>

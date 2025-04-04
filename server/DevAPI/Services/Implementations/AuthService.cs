@@ -5,6 +5,8 @@ using DevAPI.Exceptions;
 using Microsoft.AspNetCore.Identity;
 using System.Net;
 using System.Security.Cryptography;
+using Microsoft.EntityFrameworkCore;
+using DevAPI.Data;
 
 
 namespace DevAPI.Services.Implementations
@@ -18,6 +20,7 @@ namespace DevAPI.Services.Implementations
         private readonly ICartService _cartService;
         private readonly ILogger<AuthService> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly StoreDbContext _context;
 
         public AuthService(
             UserManager<User> userManager,
@@ -26,7 +29,8 @@ namespace DevAPI.Services.Implementations
             IEmailService emailService,
             ICartService cartService,
             ILogger<AuthService> logger,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            StoreDbContext context)
         {
             _userManager = userManager;
             _configuration = configuration;
@@ -35,6 +39,7 @@ namespace DevAPI.Services.Implementations
             _cartService = cartService;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
+            _context = context;
         }
 
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
@@ -107,6 +112,28 @@ namespace DevAPI.Services.Implementations
             }
 
             return await LoginAsync(new LoginRequest { Email = request.Email, Password = request.Password });
+        }
+
+        public async Task<AuthResponse> RefreshTokenAsync(string refreshToken)
+        {
+            var user = await _context.Set<User>()
+                .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken && u.RefreshTokenExpiryTime > DateTime.UtcNow);
+            if (user == null) throw new UnauthorizedException("Недействительный или истёкший refresh token");
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var newToken = _tokenService.GenerateJwtToken(user, roles); // Ваш метод генерации JWT
+            var newRefreshToken =_tokenService.GenerateRefreshToken(); // Ваш метод генерации refresh token
+
+            user.RefreshToken = newRefreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7); // Пример срока действия
+            await _userManager.UpdateAsync(user);
+
+            return new AuthResponse
+            {
+                Token = newToken,
+                RefreshToken = newRefreshToken,
+                Expiration = DateTime.UtcNow.AddHours(1)
+            };
         }
 
         public async Task<bool> ForgotPasswordAsync(string email)
