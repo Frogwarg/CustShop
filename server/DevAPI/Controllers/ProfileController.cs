@@ -42,6 +42,25 @@ namespace DevAPI.Controllers
             return Ok(new { message = "Профиль обновлен" });
         }
 
+        [HttpPost("designs")]
+        public async Task<ActionResult<DesignDto>> SaveDesign([FromBody] SaveDesignRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized();
+
+                var design = await _profileService.SaveDesignAsync(Guid.Parse(userId), request);
+                return Ok(design);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при сохранении дизайна");
+                return StatusCode(500, new { message = "Ошибка сервера" });
+            }
+        }
+
         [HttpGet("designs")]
         public async Task<ActionResult<List<DesignDto>>> GetUserDesigns()
         {

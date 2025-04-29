@@ -20,8 +20,18 @@ builder.Services.AddLogging(configure =>
     configure.AddConsole(); // Вывод в консоль
     configure.AddDebug();   // Вывод отладочных сообщений
 });
-builder.Services.AddDbContext<StoreDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddSingleton<ConnectionStringSelector>();
+
+//builder.Services.AddDbContext<StoreDbContext>(options =>
+//    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddDbContext<StoreDbContext>((serviceProvider, options) =>
+{
+    var selector = serviceProvider.GetRequiredService<ConnectionStringSelector>();
+    var connectionString = selector.GetConnectionString();
+    options.UseNpgsql(connectionString);
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowNextJS", builder =>

@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
 //import Image from 'next/image';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import useLayers from './Layers/useLayers';
-import authService from '../services/authService';
+//import authService from '../services/authService';
 import { saveStateToIndexedDB, getStateFromIndexedDB, clearStateFromIndexedDB } from '@/app/utils/db';
 
 import ProductModal from './ProductModal/productModal';
@@ -124,7 +124,6 @@ const DesignProduct = () => {
                                 visible: layer.visible
                             });
                             
-    
                             // Применяем clipPath, если есть overlay
                             const overlayImg = canvas.overlayImage;
                             if (overlayImg) {
@@ -621,6 +620,14 @@ const DesignProduct = () => {
         };
     }, [canvasRef, setLayers, setSelectedLayerId, layers]);
 
+    function generateGuid() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0,
+                v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      }
+
     const saveDesign = async () => {
         if (!canvasRef.current) return;
         
@@ -671,38 +678,38 @@ const DesignProduct = () => {
             }
 
             // Сохраняем дизайн в историю
-            const designRequest = {
-                name: `Дизайн ${new Date().toLocaleString()}`,
-                description: 'Пользовательский дизайн',
-                previewUrl: imageUrl,
-                designData: JSON.stringify(designData),
-                designHash: designHash,
-                productType: selectedProduct?.id || 'unknown',
-            };
+            // const designRequest = {
+            //     name: `Дизайн ${new Date().toLocaleString()}`,
+            //     description: 'Пользовательский дизайн',
+            //     previewUrl: imageUrl,
+            //     designData: JSON.stringify(designData),
+            //     designHash: designHash,
+            //     productType: selectedProduct?.id || 'unknown',
+            // };
 
-            const saveDesignResponse = await authService.fetchWithRefresh('/api/profile/designs', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(designRequest),
-            });
+            // const saveDesignResponse = await authService.fetchWithRefresh('/api/profile/designs', {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //         'Authorization': `Bearer ${token}`,
+            //     },
+            //     body: JSON.stringify(designRequest),
+            // });
     
-            if (!saveDesignResponse.ok) {
-                const errorText = await saveDesignResponse.text();
-                throw new Error(`Ошибка сохранения в историю: ${saveDesignResponse.status} - ${errorText}`);
-            }
+            // if (!saveDesignResponse.ok) {
+            //     const errorText = await saveDesignResponse.text();
+            //     throw new Error(`Ошибка сохранения в историю: ${saveDesignResponse.status} - ${errorText}`);
+            // }
 
-            const savedDesign = await saveDesignResponse.json();
+            // const savedDesign = await saveDesignResponse.json();
             // Создаем объект для корзины с полученным URL изображения
             const cartItem = {
                 design: {
-                    id: designId || `design-${new Date().toLocaleString()}`,
+                    id: designId || generateGuid(),
                     name: `Дизайн ${new Date().toLocaleString()}`,
                     description: "Пользовательский дизайн",
                     previewUrl: imageUrl, // Используем полученный URL вместо base64
-                    designData: designRequest.designData,
+                    designData: JSON.stringify(designData),
                     designHash: designHash,
                     productType: selectedProduct?.id,
                     designType: "Custom"

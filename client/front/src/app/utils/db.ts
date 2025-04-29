@@ -11,21 +11,6 @@ if (typeof window !== 'undefined') {
     });
 }
 
-
-// interface DesignState {
-//     selectedProduct: {
-//         id: string;
-//         type: string;
-//     } | null;
-//     layers: Layer[];
-//     selectedLayerId: string | number | null;
-//     currentText: string;
-//     canvasSize: {
-//         width: number;
-//         height: number;
-//     };
-// }
-
 export const saveStateToIndexedDB = async (state: string) => {
     if (!dbPromise) return;
     const db = await dbPromise;

@@ -58,6 +58,40 @@ namespace DevAPI.Services
             }
         }
 
+        public async Task<DesignDto> SaveDesignAsync(Guid userId, SaveDesignRequest request)
+        {
+            var customDesignType = await _context.Set<DesignType>()
+                .FirstOrDefaultAsync(dt => dt.Name == "Custom")
+                ?? throw new Exception("DesignType 'Custom' не найден");
+
+            var design = new Design
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Name = request.Name,
+                Description = request.Description,
+                PreviewUrl = request.PreviewUrl,
+                DesignData = request.DesignData,
+                DesignHash = request.DesignHash,
+                ProductType = request.ProductType,
+                CreatedAt = DateTime.UtcNow,
+                DesignTypeId = customDesignType.Id,
+                ModerationStatus = "Draft"
+            };
+
+            _context.Set<Design>().Add(design);
+            await _context.SaveChangesAsync();
+
+            return new DesignDto
+            {
+                Id = design.Id,
+                Name = design.Name,
+                Description = design.Description,
+                PreviewUrl = design.PreviewUrl,
+                ProductType = design.ProductType,
+            };
+        }
+
         public async Task<List<DesignDto>> GetUserDesignsAsync(Guid userId)
         {
             var designs = await _context.Set<Design>()

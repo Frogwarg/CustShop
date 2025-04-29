@@ -20,7 +20,7 @@ namespace DevAPI.Models.Entities
 
         public string ModerationStatus { get; set; } = "Draft"; // "Draft", "Pending", "Approved", "Rejected"
         public DateTime? SubmittedForModerationAt { get; set; }
-        public string ModeratorComment { get; set; }
+        public string ModeratorComment { get; set; } = string.Empty;
 
         public User User { get; set; }
         public DesignType DesignType { get; set; }
