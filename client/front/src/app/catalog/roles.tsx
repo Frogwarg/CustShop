@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import authService from "./../services/authService";
 
 interface Role {
     id: number;
@@ -18,9 +19,7 @@ const Roles = () => {
     useEffect(() => {
         const fetchRoles = async () => {
             try {
-                const response = await fetch("http://localhost:5123/api/Roles", { method: "GET" });
-                if (!response.ok) console.error(`HTTP error! status: ${response.status}`);
-                const data = await response.json();
+                const data = await authService.axiosWithRefresh<Role[]>('get', '/Roles');
                 setRoles(data);
                 console.log("Roles fetched:", data);
             } catch (error) {
@@ -39,25 +38,11 @@ const Roles = () => {
             return;
         }
         try {
-            const response = await fetch("http://localhost:5123/api/Roles", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    Name: newRoleName,
-                    Description: newRoleDescription,
-                    Permissions: "{\"canRead\": true, \"canWrite\": false}"
-                }),
+            const newRole = await authService.axiosWithRefresh<Role>('post', '/Roles', {
+                Name: newRoleName,
+                Description: newRoleDescription,
+                Permissions: "{\"canRead\": true, \"canWrite\": false}"
             });
-
-            if (!response.ok) {
-              const errorResponse = await response.json();
-              console.error("Error response:", errorResponse); // Посмотрим на ошибку с сервера
-              throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
-            const newRole = await response.json();
             setRoles((prevRoles) => [...prevRoles, newRole]);
             setNewRoleName("");
             setNewRoleDescription("");

@@ -1,5 +1,6 @@
 'use client'
 import { createContext, useContext, useState, useEffect } from 'react';
+import authService from './../services/authService'; // Импортируйте ваш authService
 import { useAuth } from './AuthContext';
 
 interface CartItem {
@@ -32,24 +33,25 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchCart = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      // const token = localStorage.getItem('token');
 
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      // const headers: Record<string, string> = {
+      //   'Content-Type': 'application/json',
+      // };
+      // if (token) {
+      //   headers['Authorization'] = `Bearer ${token}`;
+      // }
 
-      const response = await fetch('/api/cart', {
-        method: 'GET',
-        headers,
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
+      // const response = await fetch('/api/cart', {
+      //   method: 'GET',
+      //   headers,
+      //   credentials: 'include'
+      // });
+      // if (!response.ok) {
+      //   throw new Error(`HTTP error! status: ${response.status}`);
+      // }
+      // const data = await response.json();
+      const data = await authService.axiosWithRefresh<CartItem[]>('get', '/cart');
       setCartItems(data);
     } catch (error) {
       console.error('Error fetching cart:', error);
@@ -62,20 +64,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   // Удаляем товар из корзины
   const removeFromCart = async (designId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/cart/${designId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        // await fetchCart(); // Обновляем корзину после удаления
-        setCartItems((prevItems) => prevItems.filter((item) => item.design.id !== designId));
-      } else {
-        throw new Error('Failed to remove item');
-      }
+      await authService.axiosWithRefresh('delete', `/cart/${designId}`);
     } catch (error) {
       console.error(`Failed to remove item from cart: ${error}`);
       await fetchCart();
@@ -90,19 +79,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 item.design.id === designId ? { ...item, quantity } : item
             )
         );
-        const token = localStorage.getItem('token');
-        const response = await fetch(`/api/cart/${designId}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(quantity)
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to update quantity on server');
-        }
+        await authService.axiosWithRefresh('put', `/cart/${designId}`, quantity);
     } catch (error) {
       console.error(`Failed to update quantity: ${error}`);
       // Здесь можно добавить уведомление пользователю об ошибке, но не перезагружать всю корзину

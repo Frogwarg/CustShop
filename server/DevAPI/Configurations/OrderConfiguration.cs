@@ -14,6 +14,7 @@ namespace DevAPI.Configurations
             builder.Property(o => o.DiscountAmount).HasColumnType("decimal(18,2)");
             builder.Property(o => o.Status).IsRequired().HasMaxLength(50);
             builder.Property(o => o.PaymentStatus).IsRequired().HasMaxLength(50);
+            builder.Property(o => o.AdminComment).HasMaxLength(500);
 
             builder.HasOne(o => o.User)
                 .WithMany(u => u.Orders)
@@ -25,7 +26,8 @@ namespace DevAPI.Configurations
 
             builder.HasOne(o => o.Discount)
                 .WithMany(d => d.Orders)
-                .HasForeignKey(o => o.DiscountId);
+                .HasForeignKey(o => o.DiscountId)
+                .IsRequired(false);
 
             builder.HasMany(o => o.OrderItems)
                 .WithOne(oi => oi.Order)

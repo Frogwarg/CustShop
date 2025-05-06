@@ -22,6 +22,7 @@ namespace DevAPI.Data
         public DbSet<SavedAddress> SavedAddresses { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<AdminActionLog> AdminActionLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -45,6 +46,7 @@ namespace DevAPI.Data
             modelBuilder.ApplyConfiguration(new Configurations.OrderConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.OrderItemConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.CatalogItemConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.AdminActionLogConfiguration());
         }
     }
 }

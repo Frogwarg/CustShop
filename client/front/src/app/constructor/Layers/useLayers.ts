@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { fabric } from 'fabric';
 
+export interface SerializedFabricFilter {
+    name: string;
+    options?: Record<string, unknown>;
+  }  
+
 export interface Layer {
     id: number | string;
     type: 'image' | 'text';
@@ -12,6 +17,11 @@ export interface Layer {
     height: number;
     url?: string | ArrayBuffer | null;
     fontSize?: number;
+    fontFamily?: string;
+    filters?: SerializedFabricFilter[];
+    fill?: string;
+    flipX?: boolean;
+    flipY?: boolean;
     rotation?: number;
     visible?: boolean;
     scaleX?: number;

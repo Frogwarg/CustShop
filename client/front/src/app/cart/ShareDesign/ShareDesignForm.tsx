@@ -1,8 +1,8 @@
 "use client";
-
 import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { toast } from 'sonner';
+import authService from "../../services/authService";
 
 interface ShareDesignFormProps {
     designId: string;
@@ -21,15 +21,7 @@ const ShareDesignForm: React.FC<ShareDesignFormProps> = ({ designId, onClose, on
             return;
         }
         try {
-            const response = await fetch(`http://localhost:5123/api/Design/${designId}/share`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-                body: JSON.stringify(formData),
-            });
-            if (!response.ok) throw new Error("Ошибка при отправке");
+            await authService.axiosWithRefresh('post', `/Design/${designId}/share`, formData);
             onSubmit();
             toast.success("Дизайн отправлен на модерацию!");
         } catch (error) {

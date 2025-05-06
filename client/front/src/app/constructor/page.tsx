@@ -4,11 +4,14 @@ import { toast } from 'sonner'
 import CryptoJS from 'crypto-js';
 
 import { useSearchParams } from 'next/navigation';
+import authService from '../services/authService';
 //import Image from 'next/image';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import useLayers from './Layers/useLayers';
+import useLayers, { Layer } from './Layers/useLayers';
+import { SerializedFabricFilter } from './Layers/useLayers';
 //import authService from '../services/authService';
 import { saveStateToIndexedDB, getStateFromIndexedDB, clearStateFromIndexedDB } from '@/app/utils/db';
+import { createFilterByName } from '../utils/lib';
 
 import ProductModal from './ProductModal/productModal';
 import TabbedControls from './tabbedControl';
@@ -120,9 +123,32 @@ const DesignProduct = () => {
                                 top: layer.y,
                                 scaleX: layer.width / img.width,
                                 scaleY: layer.height / img.height,
+                                flipX: layer.flipX,
+                                flipY: layer.flipY,
                                 data: { id: layer.id },
                                 visible: layer.visible
                             });
+                            if (Array.isArray(layer.filters)) {
+                                const fabricFilters: fabric.IBaseFilter[] = layer.filters.map((f: SerializedFabricFilter) => {
+                                    const filterMap: { [key: string]: new (options?: Record<string, unknown>) => fabric.IBaseFilter } = {
+                                        Grayscale: fabric.Image.filters.Grayscale,
+                                        Sepia: fabric.Image.filters.Sepia,
+                                        Invert: fabric.Image.filters.Invert,
+                                        Brightness: fabric.Image.filters.Brightness as new (options?: Record<string, unknown> & { brightness?: number } | undefined) => fabric.IBaseFilter,
+                                    };
+                                    const FilterClass = filterMap[f.name];
+                                    if (!FilterClass) return null;
+                            
+                                    // Передаем параметры из options
+                                    if (f.name === 'Brightness' && f.options) {
+                                        return new FilterClass({ brightness: f.options.brightness as number });
+                                    }
+                                    return new FilterClass();
+                                }).filter(Boolean) as fabric.IBaseFilter[];
+                            
+                                fabricImage.filters = fabricFilters;
+                                fabricImage.applyFilters();
+                            }
                             
                             // Применяем clipPath, если есть overlay
                             const overlayImg = canvas.overlayImage;
@@ -149,14 +175,19 @@ const DesignProduct = () => {
                         };
                     });
                 } else if (layer.type === 'text' && layer.text) {
+                    console.log(layer)
                     const text = new fabric.Text(layer.text, {
                         left: layer.x,
                         top: layer.y,
                         scaleX: layer.scaleX || 1,
                         scaleY: layer.scaleY || 1,
+                        flipX: layer.flipX,
+                        flipY: layer.flipY,
                         fontSize: layer.fontSize || 30,
                         data: { id: layer.id },
-                        visible: layer.visible
+                        visible: layer.visible,
+                        fill: layer.fill,
+                        fontFamily: layer.fontFamily
                     });
     
                     // Применяем clipPath для текста
@@ -450,9 +481,12 @@ const DesignProduct = () => {
                         image: img,
                         x: fabricImage.left || 0,
                         y: fabricImage.top || 0,
+                        flipX: false,
+                        flipY: false,
                         width: newWidth,
                         height: newHeight,
                         url: reader.result,
+                        filters: undefined,
                     },
                 );
                 if (fileInputRef.current) {
@@ -499,9 +533,13 @@ const DesignProduct = () => {
                 text: currentText, 
                 x: text.left || 0, 
                 y: text.top || 0,
+                flipX: false,
+                flipY: false,
                 fontSize: 30,
                 width: text.width || 200,
-                height: text.height || 30
+                height: text.height || 30,
+                fill: '#000',
+                fontFamily: 'Times New Roman'
             }
         );
         setCurrentText('');
@@ -644,21 +682,9 @@ const DesignProduct = () => {
             });
 
             // Загружаем превью в ImgBB
-            const uploadResponse = await fetch('/api/upload/design-preview', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    imageData: previewDataURL
-                })
+            const { imageUrl } = await authService.axiosWithRefresh<{ imageUrl: string }>('post', '/upload/design-preview', {
+                imageData: previewDataURL
             });
-
-            if (!uploadResponse.ok) {
-                throw new Error('Ошибка при загрузке превью');
-            }
-
-            const { imageUrl } = await uploadResponse.json();
 
             // Подготавливаем данные дизайна
             const designData = {
@@ -672,10 +698,10 @@ const DesignProduct = () => {
 
             const designHash = CryptoJS.SHA256(JSON.stringify(designData)).toString();
 
-            const token = localStorage.getItem('token');
-            if (!token) {
-                throw new Error('Токен авторизации отсутствует');
-            }
+            // const token = localStorage.getItem('token');
+            // if (!token) {
+            //     throw new Error('Токен авторизации отсутствует');
+            // }
 
             // Сохраняем дизайн в историю
             // const designRequest = {
@@ -718,26 +744,28 @@ const DesignProduct = () => {
                 price: 1000 // Здесь нужна логика расчета цены
             };
 
-            const endpoint = designId ? `/api/cart/update/${designId}` : '/api/cart/add';
-            const method = designId ? 'PUT' : 'POST';
+            const endpoint = designId ? `/cart/update/${designId}` : '/cart/add';
+            const method = designId ? 'put' : 'post';
             
             // Добавляем в корзину
-            const cartResponse = await fetch(endpoint, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(cartItem)
-            });
+            // const cartResponse = await fetch(endpoint, {
+            //     method: method,
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //         'Authorization': `Bearer ${token}`
+            //     },
+            //     body: JSON.stringify(cartItem)
+            // });
 
-            if (cartResponse.ok) {
-                toast.success(designId ? 'Дизайн обновлен' : 'Товар добавлен в корзину');
-            } else {
-                // Получаем текст ошибки с сервера
-                const errorText = await cartResponse.text();
-                throw new Error(`Ошибка сервера: ${cartResponse.status} - ${errorText}`);
-            }
+            // if (cartResponse.ok) {
+            //     toast.success(designId ? 'Дизайн обновлен' : 'Товар добавлен в корзину');
+            // } else {
+            //     // Получаем текст ошибки с сервера
+            //     const errorText = await cartResponse.text();
+            //     throw new Error(`Ошибка сервера: ${cartResponse.status} - ${errorText}`);
+            // }
+            await authService.axiosWithRefresh(method, endpoint, JSON.stringify(cartItem));
+            toast.success(designId ? 'Дизайн обновлен' : 'Товар добавлен в корзину');
         } catch (error: Error | unknown) {
             console.error('Ошибка:', error);
             toast.error(`Ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
@@ -782,6 +810,13 @@ const DesignProduct = () => {
         }
     };
 
+    function updateExistingProperties<T extends Layer>(target: T, source: Partial<T>){
+        for (const key in source){
+            if (source[key] !== undefined && key in target){
+                target[key] = source[key] as T[Extract<keyof T, string>];
+            }
+        }
+    }
     return (
         <div style={{ display: 'flex', justifyContent:'space-between' }}>
         
@@ -820,7 +855,27 @@ const DesignProduct = () => {
                 <TabbedControls  selectedObject={selectedObject} 
                     onUpdateObject={(updatedProperties) => {
                         if (selectedObject) {
-                            selectedObject.set(updatedProperties);
+                            if (selectedObject.type === 'image' && updatedProperties.filters) {
+                                const img = selectedObject as fabric.Image;
+                                const newFilters = updatedProperties.filters
+                                  .map((f: SerializedFabricFilter) => createFilterByName(f.name, f.options))
+                                  .filter((f): f is fabric.IBaseFilter => f !== null);
+                                img.filters = newFilters;
+                                img.applyFilters();
+                              } else {
+                                // Обновляем другие свойства
+                                selectedObject.set(updatedProperties);
+                              }
+                            //обновляем свойства объекта на самом канвасе
+                            const selectedLayerIndex = layers.findIndex(layer => layer.id == selectedLayerId);
+                            if (selectedLayerIndex !== -1){
+                                const updatedLayer = { ...layers[selectedLayerIndex]}
+                                updateExistingProperties(updatedLayer, updatedProperties);
+                                const newLayers = [...layers];
+                                newLayers[selectedLayerIndex] = updatedLayer;
+                                setLayers(newLayers);
+                            }
+                            
                             selectedObject.canvas?.renderAll();
                         }
                 }} />

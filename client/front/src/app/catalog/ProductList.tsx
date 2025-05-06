@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import authService from "./../services/authService";
 import Image from 'next/image';
 
 interface Product {
@@ -21,8 +22,7 @@ const ProductList = () => {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const response = await fetch("http://localhost:5123/api/Catalog");
-                const data = await response.json();
+                const data = await authService.axiosWithRefresh<Product[]>('get', '/Catalog');
                 setProducts(data);
             } catch (error) {
                 console.error("Ошибка:", error);

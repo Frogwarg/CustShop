@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 
 const API_URL = 'http://localhost:5123/api';
 
@@ -119,6 +119,40 @@ const authService = {
     }
 
     return response;
+  },
+  async axiosWithRefresh<T, D = unknown>(method: 'get' | 'post' | 'put' | 'delete', url: string, data?: D, config: AxiosRequestConfig = {}): Promise<T> {
+    const token = this.getToken();
+    const requestConfig: AxiosRequestConfig = {
+      method,
+      url: `${API_URL}${url}`,
+      headers: { 
+        'Authorization': `Bearer ${token}`, 
+        'Content-Type': 'application/json',
+        ...config.headers,
+      },
+      data,
+      withCredentials: true,
+      ...config,
+    };
+
+    try {
+      const response = await axios(requestConfig);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        const newTokenData = await this.refreshToken();
+        if (newTokenData) {
+          requestConfig.headers = requestConfig.headers || {};
+          requestConfig.headers.Authorization = `Bearer ${newTokenData.token}`;
+          const retryResponse = await axios(requestConfig);
+          return retryResponse.data;
+        } else {
+          this.logout();
+          throw new Error('Токен истёк, требуется повторный вход');
+        }
+      }
+      throw error;
+    }
   },
 
   isAuthenticated() {
