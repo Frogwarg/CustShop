@@ -124,6 +124,29 @@ namespace DevAPI.Controllers
             return Ok();
         }
 
+        [HttpPut("update/{designId}")]
+        public async Task<IActionResult> UpdateCartItem(Guid designId, [FromBody] CartItemDto request)
+        {
+            try
+            {
+                var userId = User.Identity.IsAuthenticated
+                    ? Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value)
+                    : (Guid?)null;
+
+                var sessionId = userId.HasValue
+                    ? null
+                    : HttpContext.Request.Cookies["cart_session_id"];
+
+                await _cartService.UpdateCartItem(userId, sessionId, designId, request);
+                return Ok(new { message = "Дизайн успешно обновлен" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при обновлении дизайна в корзине");
+                return StatusCode(500, ex.Message);
+            }
+        }
+
         [HttpPost("merge")]
         [Authorize]
         public async Task<IActionResult> MergeAnonymousCart()

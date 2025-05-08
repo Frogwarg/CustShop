@@ -1,6 +1,7 @@
 'use client'
 import { createContext, useContext, useState, useEffect } from 'react';
-import authService from './../services/authService'; // Импортируйте ваш authService
+import { toast } from 'sonner';
+import authService from './../services/authService';
 import { useAuth } from './AuthContext';
 
 interface CartItem {
@@ -65,8 +66,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const removeFromCart = async (designId: string) => {
     try {
       await authService.axiosWithRefresh('delete', `/cart/${designId}`);
+      await fetchCart();
+      toast.success('Товар удален из корзины');
     } catch (error) {
-      console.error(`Failed to remove item from cart: ${error}`);
+      toast.error(`Не удалось удалить товар из корзины: ${error}`);
       await fetchCart();
     }
   };

@@ -1,4 +1,5 @@
-﻿using DevAPI.Controllers;
+﻿using System.Threading.Tasks;
+using DevAPI.Controllers;
 using DevAPI.Models.DTOs;
 
 namespace DevAPI.Services.Interfaces
@@ -9,5 +10,6 @@ namespace DevAPI.Services.Interfaces
         Task<List<DesignDto>> GetPendingDesigns();
         Task ApproveDesign(Guid designId, string moderatorComment);
         Task RejectDesign(Guid designId, string moderatorComment);
+        Task<DesignDto> GetDesignById(Guid designId, Guid userId);
     }
 }

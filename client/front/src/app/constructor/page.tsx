@@ -3,20 +3,17 @@ import { fabric } from 'fabric';
 import { toast } from 'sonner'
 import CryptoJS from 'crypto-js';
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import authService from '../services/authService';
-//import Image from 'next/image';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import useLayers, { Layer } from './Layers/useLayers';
 import { SerializedFabricFilter } from './Layers/useLayers';
-//import authService from '../services/authService';
 import { saveStateToIndexedDB, getStateFromIndexedDB, clearStateFromIndexedDB } from '@/app/utils/db';
 import { createFilterByName } from '../utils/lib';
 
 import ProductModal from './ProductModal/productModal';
 import TabbedControls from './tabbedControl';
 import LayersPanel from './Layers/LayersPanel';
-//import { dataURLtoBlob } from '@/app/utils/lib';
 
 const DesignProduct = () => {
     const searchParams = useSearchParams();
@@ -36,6 +33,8 @@ const DesignProduct = () => {
     const canvasRef = useRef<fabric.Canvas | null>(null);
     const objectsRef = useRef<fabric.Object[]>([]);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const hasInitialized = useRef(false);
+    const router = useRouter();
 
     const {
         layers,
@@ -50,8 +49,31 @@ const DesignProduct = () => {
 
     useEffect(() => {
         const initializeCanvasAndLayers = async () => {
-            // const savedState = localStorage.getItem('designState');
-            const savedState = await getStateFromIndexedDB();
+
+            if (hasInitialized.current) return;
+            hasInitialized.current = true;
+            let savedState: string | null = null;
+            setLayers([]);
+
+            if (designId){
+                try {
+                    const remoteDesign = await authService.axiosWithRefresh<{ designData?: string }>('get', `/Design/${designId}`);
+                    if (remoteDesign && remoteDesign.designData) {
+                        savedState = remoteDesign.designData;
+                        console.log('Fetched design from remote:', JSON.parse(remoteDesign.designData));
+                    } else {
+                        console.warn('No design data found for designId:', designId);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch design from remote:', error);
+                    toast.error('Failed to load design from server. Loading local state.');
+                }
+            } 
+            if (!savedState) {
+                savedState = await getStateFromIndexedDB();
+            }
+            
+            console.log('Saved state:', savedState);
             if (!canvasRef.current) {
                 const canvas = new fabric.Canvas('canvas', {
                     width: canvasSize.width,
@@ -80,6 +102,9 @@ const DesignProduct = () => {
                         resolve();
                     }, { crossOrigin: 'anonymous' });
                 });
+                canvasRef?.current.getObjects().forEach((obj) => {
+                    if (obj !== canvas.overlayImage) canvas.remove(obj);
+                });
             }
     
             if (!savedState) return;
@@ -91,11 +116,13 @@ const DesignProduct = () => {
                 currentText: savedText,
                 canvasSize: savedSize,
             } = JSON.parse(savedState);
+
+
     
             // Устанавливаем состояния
             setSelectedProduct(savedProduct);
             setSelectedLayerId(savedLayerId);
-            setCurrentText(savedText);
+            setCurrentText(savedText ?? 'Your Text Here');
             setCanvasSize(savedSize);
     
             // Восстанавливаем продукт, если он был выбран
@@ -107,9 +134,6 @@ const DesignProduct = () => {
             }
 
             const canvas = canvasRef.current!;
-            // canvas.getObjects().forEach((obj) => {
-            //     if (obj !== canvas.overlayImage) canvas.remove(obj);
-            // });
             // Восстанавливаем слои
             for (const layer of savedLayers) {
                 if (layer.type === 'image' && typeof layer.url === 'string') {
@@ -175,7 +199,6 @@ const DesignProduct = () => {
                         };
                     });
                 } else if (layer.type === 'text' && layer.text) {
-                    console.log(layer)
                     const text = new fabric.Text(layer.text, {
                         left: layer.x,
                         top: layer.y,
@@ -222,7 +245,7 @@ const DesignProduct = () => {
     
         initializeCanvasAndLayers();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [designId]);
     
     const saveStateToLocalStorage = useCallback(async () => {
         const state = {
@@ -748,22 +771,6 @@ const DesignProduct = () => {
             const method = designId ? 'put' : 'post';
             
             // Добавляем в корзину
-            // const cartResponse = await fetch(endpoint, {
-            //     method: method,
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //         'Authorization': `Bearer ${token}`
-            //     },
-            //     body: JSON.stringify(cartItem)
-            // });
-
-            // if (cartResponse.ok) {
-            //     toast.success(designId ? 'Дизайн обновлен' : 'Товар добавлен в корзину');
-            // } else {
-            //     // Получаем текст ошибки с сервера
-            //     const errorText = await cartResponse.text();
-            //     throw new Error(`Ошибка сервера: ${cartResponse.status} - ${errorText}`);
-            // }
             await authService.axiosWithRefresh(method, endpoint, JSON.stringify(cartItem));
             toast.success(designId ? 'Дизайн обновлен' : 'Товар добавлен в корзину');
         } catch (error: Error | unknown) {
@@ -803,7 +810,6 @@ const DesignProduct = () => {
         setCurrentText('Your Text Here');
         layers.forEach((layer) => removeLayer(layer.id));
         await clearStateFromIndexedDB();
-        // localStorage.removeItem('designState');
 
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
@@ -815,6 +821,32 @@ const DesignProduct = () => {
             if (source[key] !== undefined && key in target){
                 target[key] = source[key] as T[Extract<keyof T, string>];
             }
+        }
+    }
+    function handleUpdateObject(updatedProperties: Partial<Layer>) {
+        if (selectedObject) {
+            if (selectedObject.type === 'image' && updatedProperties.filters) {
+                const img = selectedObject as fabric.Image;
+                const newFilters = updatedProperties.filters
+                    .map((f: SerializedFabricFilter) => createFilterByName(f.name, f.options))
+                    .filter((f): f is fabric.IBaseFilter => f !== null);
+                img.filters = newFilters;
+                img.applyFilters();
+                } else {
+                // Обновляем другие свойства
+                selectedObject.set(updatedProperties);
+                }
+            //обновляем свойства объекта на самом канвасе
+            const selectedLayerIndex = layers.findIndex(layer => layer.id == selectedLayerId);
+            if (selectedLayerIndex !== -1){
+                const updatedLayer = { ...layers[selectedLayerIndex]}
+                updateExistingProperties(updatedLayer, updatedProperties);
+                const newLayers = [...layers];
+                newLayers[selectedLayerIndex] = updatedLayer;
+                setLayers(newLayers);
+            }
+            
+            selectedObject.canvas?.renderAll();
         }
     }
     return (
@@ -847,38 +879,24 @@ const DesignProduct = () => {
                     onChange={(e) => setCurrentText (e.target.value)}
                     placeholder="Enter text"
                 />
-                <button onClick={handleAddText}>Add Text</button>
+                <button onClick={handleAddText}>Добавить текст</button>
                 <button onClick={() => setIsProductModalOpen(true)}>Выбрать товар</button>
                 <button onClick={getAllObjects}>Get All Objects</button>
-                <button onClick={saveDesign}>Save Design</button>
-                <button onClick={resetDesign}>Reset Design</button>
-                <TabbedControls  selectedObject={selectedObject} 
-                    onUpdateObject={(updatedProperties) => {
-                        if (selectedObject) {
-                            if (selectedObject.type === 'image' && updatedProperties.filters) {
-                                const img = selectedObject as fabric.Image;
-                                const newFilters = updatedProperties.filters
-                                  .map((f: SerializedFabricFilter) => createFilterByName(f.name, f.options))
-                                  .filter((f): f is fabric.IBaseFilter => f !== null);
-                                img.filters = newFilters;
-                                img.applyFilters();
-                              } else {
-                                // Обновляем другие свойства
-                                selectedObject.set(updatedProperties);
-                              }
-                            //обновляем свойства объекта на самом канвасе
-                            const selectedLayerIndex = layers.findIndex(layer => layer.id == selectedLayerId);
-                            if (selectedLayerIndex !== -1){
-                                const updatedLayer = { ...layers[selectedLayerIndex]}
-                                updateExistingProperties(updatedLayer, updatedProperties);
-                                const newLayers = [...layers];
-                                newLayers[selectedLayerIndex] = updatedLayer;
-                                setLayers(newLayers);
-                            }
-                            
-                            selectedObject.canvas?.renderAll();
-                        }
-                }} />
+                <button onClick={saveDesign}>
+                    {designId ? 'Сохранить дизайн' : 'Добавить в корзину'}
+                </button>
+                <button onClick={resetDesign}>Очистить дизайн</button>
+                {designId && (
+                    <button
+                        onClick={() => {
+                            resetDesign();
+                            router.push('/constructor');
+                        }}
+                    >
+                        Новый дизайн
+                    </button>
+                )}
+                <TabbedControls  selectedObject={selectedObject} onUpdateObject={handleUpdateObject} />
             </div>
         </div>
     );

@@ -18,6 +18,33 @@ namespace DevAPI.Services.Implementations
             _logger = logger;
         }
 
+        public async Task<DesignDto?> GetDesignById(Guid designId, Guid userId)
+        {
+            var design = await _context.Designs
+                .Where(d => d.Id == designId && (d.UserId == userId || d.CartItems.Any(ci => ci.UserId == userId)))
+                .Select(d => new DesignDto
+                {
+                    Id = d.Id,
+                    Name = d.Name,
+                    Description = d.Description,
+                    PreviewUrl = d.PreviewUrl,
+                    DesignData = d.DesignData,
+                    DesignHash = d.DesignHash,
+                    ProductType = d.ProductType,
+                    DesignType = d.DesignType.Name
+                })
+                .FirstOrDefaultAsync();
+
+            if (design == null)
+            {
+                _logger.LogWarning($"Дизайн с ID {designId} не найден или не принадлежит пользователю {userId}");
+                return null;
+            }
+
+            _logger.LogInformation($"Дизайн {designId} успешно получен пользователем {userId}");
+            return design;
+        }
+
         public async Task SubmitForModeration(Guid designId, Guid userId, ShareDesignRequest request)
         {
             var design = await _context.Designs

@@ -11,6 +11,7 @@ namespace DevAPI.Services
         Task<List<CartItemDto>> GetCart(Guid? userId, string sessionId);
         Task ClearCart(Guid? userId, string sessionId);
         Task UpdateQuantity(Guid? userId, string sessionId, Guid productId, int quantity);
+        Task UpdateCartItem(Guid? userId, string sessionId, Guid designId, CartItemDto cartItemDto);
         Task MergeAnonymousCart(Guid userId, string sessionId);
     }
 } 

@@ -27,6 +27,27 @@ namespace DevAPI.Controllers
             _logger = logger;
         }
 
+        [HttpGet("{designId}")]
+        [Authorize]
+        public async Task<IActionResult> GetDesign(Guid designId)
+        {
+            try
+            {
+                var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+                var design = await _designService.GetDesignById(designId, userId);
+                if (design == null)
+                {
+                    return NotFound("Дизайн не найден или вы не имеете к нему доступа.");
+                }
+                return Ok(design);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении дизайна");
+                return StatusCode(500, ex.Message);
+            }
+        }
+
         [HttpPost("{designId}/share")]
         [Authorize]
         public async Task<IActionResult> ShareDesign(Guid designId, [FromBody] ShareDesignRequest request)

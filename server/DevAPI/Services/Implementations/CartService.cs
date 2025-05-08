@@ -107,7 +107,19 @@ namespace DevAPI.Services
                     _context.Designs.Remove(item.Design);
                 }
                 _context.CartItems.Remove(item);
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error during SaveChangesAsync for CartItem {item.Id}");
+                    throw;
+                }
+            }
+            else
+            {
+                _logger.LogWarning($"CartItem for Design {designId} not found for user {userId} or session {sessionId}");
             }
         }
 
@@ -185,6 +197,35 @@ namespace DevAPI.Services
                 item.Quantity = quantity;
                 await _context.SaveChangesAsync();
             }
+        }
+        public async Task UpdateCartItem(Guid? userId, string sessionId, Guid designId, CartItemDto cartItemDto)
+        {
+            var cartItem = await _context.CartItems
+                .Include(c => c.Design)
+                .FirstOrDefaultAsync(c =>
+                    (userId.HasValue ? c.UserId == userId : c.SessionId == sessionId) &&
+                    c.DesignId == designId);
+
+            if (cartItem == null)
+            {
+                _logger.LogWarning($"CartItem for Design {designId} not found for user {userId} or session {sessionId}");
+                throw new Exception("Элемент корзины не найден");
+            }
+
+            // Обновляем данные дизайна
+            cartItem.Design.Name = cartItemDto.Design.Name;
+            cartItem.Design.Description = cartItemDto.Design.Description;
+            cartItem.Design.PreviewUrl = cartItemDto.Design.PreviewUrl;
+            cartItem.Design.DesignData = cartItemDto.Design.DesignData;
+            cartItem.Design.DesignHash = cartItemDto.Design.DesignHash;
+            cartItem.Design.ProductType = cartItemDto.Design.ProductType;
+
+            // Обновляем данные корзины
+            cartItem.Quantity = cartItemDto.Quantity;
+            cartItem.Price = cartItemDto.Price;
+            cartItem.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task MergeAnonymousCart(Guid userId, string sessionId)
