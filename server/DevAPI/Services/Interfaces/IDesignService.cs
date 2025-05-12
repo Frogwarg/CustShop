@@ -10,6 +10,7 @@ namespace DevAPI.Services.Interfaces
         Task<List<DesignDto>> GetPendingDesigns();
         Task ApproveDesign(Guid designId, string moderatorComment);
         Task RejectDesign(Guid designId, string moderatorComment);
-        Task<DesignDto> GetDesignById(Guid designId, Guid userId);
+        Task<DesignDto> GetDesignById(Guid designId, Guid? userId, string sessionId);
+        Task UpdateDesignAsync(Guid id, Guid userId, bool isAdminOrModerator, DesignUpdateDto request);
     }
 }

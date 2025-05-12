@@ -4,6 +4,7 @@ using DevAPI.Services.Interfaces;
 using Google;
 using DevAPI.Data;
 using Microsoft.EntityFrameworkCore;
+using DevAPI.Exceptions;
 
 namespace DevAPI.Services.Implementations
 {
@@ -18,10 +19,11 @@ namespace DevAPI.Services.Implementations
             _logger = logger;
         }
 
-        public async Task<DesignDto?> GetDesignById(Guid designId, Guid userId)
+        public async Task<DesignDto?> GetDesignById(Guid designId, Guid? userId, string sessionId)
         {
             var design = await _context.Designs
-                .Where(d => d.Id == designId && (d.UserId == userId || d.CartItems.Any(ci => ci.UserId == userId)))
+                .Include(d => d.DesignType)
+                .Where(d => d.Id == designId)
                 .Select(d => new DesignDto
                 {
                     Id = d.Id,
@@ -31,18 +33,78 @@ namespace DevAPI.Services.Implementations
                     DesignData = d.DesignData,
                     DesignHash = d.DesignHash,
                     ProductType = d.ProductType,
-                    DesignType = d.DesignType.Name
+                    DesignType = d.DesignType.Name,
+                    UserId = d.UserId.ToString(),
+                    ModerationStatus = d.ModerationStatus
                 })
                 .FirstOrDefaultAsync();
 
             if (design == null)
             {
-                _logger.LogWarning($"Дизайн с ID {designId} не найден или не принадлежит пользователю {userId}");
+                _logger.LogWarning($"Дизайн с ID {designId} не найден");
                 return null;
             }
 
-            _logger.LogInformation($"Дизайн {designId} успешно получен пользователем {userId}");
+            // Публичные дизайны (Approved) доступны всем
+            if (design.ModerationStatus == "Approved")
+            {
+                _logger.LogInformation($"Публичный дизайн {designId} возвращён пользователю {userId?.ToString() ?? "неавторизованному"}");
+                return design;
+            }
+
+            // Для непубличных дизайнов проверяем, является ли пользователь автором или имеет дизайн в корзине
+            if (userId.HasValue)
+            {
+                var isOwnerOrInCart = await _context.Designs
+                    .AnyAsync(d => d.Id == designId &&
+                                  (d.UserId == userId || d.CartItems.Any(ci => ci.UserId == userId)));
+
+                if (!isOwnerOrInCart)
+                {
+                    _logger.LogWarning($"Дизайн {designId} не принадлежит пользователю {userId} и не находится в его корзине");
+                    return null;
+                }
+            }
+            else if (!string.IsNullOrEmpty(sessionId))
+            {
+                var isInCart = await _context.CartItems
+                    .AnyAsync(ci => ci.DesignId == designId && ci.SessionId == sessionId);
+
+                if (!isInCart)
+                {
+                    _logger.LogWarning($"Дизайн {designId} не найден в корзине неавторизованного пользователя с sessionId {sessionId}");
+                    return null;
+                }
+            }
+            else
+            {
+                _logger.LogWarning($"Неавторизованный пользователь без sessionId пытался получить непубличный дизайн {designId}");
+                return null;
+            }
+
+            _logger.LogInformation($"Дизайн {designId} успешно получен пользователем {userId?.ToString() ?? "неавторизованным"} с sessionId {sessionId ?? "отсутствует"}");
             return design;
+        }
+
+        public async Task UpdateDesignAsync(Guid id, Guid userId, bool isAdminOrModerator, DesignUpdateDto request)
+        {
+            var design = await _context.Designs
+                .FirstOrDefaultAsync(d => d.Id == id);
+            if (design == null)
+            {
+                throw new NotFoundException("Design not found");
+            }
+            if (!isAdminOrModerator && design.UserId != userId)
+            {
+                throw new UnauthorizedException("User is not authorized to update this design");
+            }
+            design.Name = request.Name;
+            design.Description = request.Description;
+            design.PreviewUrl = request.PreviewUrl;
+            design.DesignData = request.DesignData;
+            design.DesignHash = request.DesignHash;
+            design.ProductType = request.ProductType;
+            await _context.SaveChangesAsync();
         }
 
         public async Task SubmitForModeration(Guid designId, Guid userId, ShareDesignRequest request)
@@ -93,7 +155,9 @@ namespace DevAPI.Services.Implementations
                     DesignData = d.DesignData,
                     DesignHash = d.DesignHash,
                     ProductType = d.ProductType,
-                    DesignType = d.DesignType.Name // Предполагается, что DesignType загружается через навигационное свойство
+                    DesignType = d.DesignType.Name, // Предполагается, что DesignType загружается через навигационное свойство
+                    UserId = d.UserId.ToString(),
+                    ModerationStatus = d.ModerationStatus
                 })
                 .ToListAsync();
 

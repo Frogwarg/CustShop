@@ -11,6 +11,7 @@ using DevAPI.Models.DTOs;
 using DevAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using DevAPI.Exceptions;
 
 namespace DevAPI.Controllers
 {
@@ -28,13 +29,18 @@ namespace DevAPI.Controllers
         }
 
         [HttpGet("{designId}")]
-        [Authorize]
+        //[Authorize]
         public async Task<IActionResult> GetDesign(Guid designId)
         {
             try
             {
-                var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-                var design = await _designService.GetDesignById(designId, userId);
+                Guid? userId = User.Identity.IsAuthenticated
+                    ? Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value)
+                    : null;
+                var sessionId = userId.HasValue
+                    ? null
+                    : HttpContext.Request.Cookies["cart_session_id"];
+                var design = await _designService.GetDesignById(designId, userId, sessionId);
                 if (design == null)
                 {
                     return NotFound("Дизайн не найден или вы не имеете к нему доступа.");
@@ -45,6 +51,33 @@ namespace DevAPI.Controllers
             {
                 _logger.LogError(ex, "Ошибка при получении дизайна");
                 return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPut("{id}")]
+        [Authorize]
+        public async Task<IActionResult> UpdateDesign(Guid id, [FromBody] DesignUpdateDto request)
+        {
+            _logger.LogInformation("Получен запрос на обновление дизайна");
+            try
+            {
+                var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+                var isAdminOrModerator = User.IsInRole("Admin") || User.IsInRole("Moderator");
+                await _designService.UpdateDesignAsync(id, userId, isAdminOrModerator, request);
+                return Ok(new { message = "Design updated successfully" });
+            }
+            catch (UnauthorizedException)
+            {
+                return Unauthorized();
+            }
+            catch (NotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating design {id}", id);
+                return StatusCode(500, new { message = "Internal server error" });
             }
         }
 

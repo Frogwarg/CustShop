@@ -1,6 +1,7 @@
 import axios, { AxiosRequestConfig } from 'axios';
 
-const API_URL = 'http://localhost:5123/api';
+// const API_URL = 'http://localhost:5123/api';
+const API_URL = '/api';
 
 export interface LoginRequest {
   email: string;
@@ -24,7 +25,6 @@ export interface AuthResponse {
 }
 
 const authService = {
-  
   async login(data: LoginRequest): Promise<AuthResponse> {
     const response = await axios.post(`${API_URL}/auth/login`, data, {
         headers: {
@@ -69,9 +69,36 @@ const authService = {
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
   },
+  setToken(token: string, expiration: string) {
+    localStorage.setItem('token', token);
+    localStorage.setItem('tokenExpiration', expiration);
+  },
 
-  getToken() {
-    return localStorage.getItem('token');
+  getToken(): string | null {
+    const token = localStorage.getItem('token');
+    const expiration = localStorage.getItem('tokenExpiration');
+    if (token && expiration && new Date(expiration) > new Date()) {
+      return token;
+    }
+    this.logout();
+    return null;
+  },
+  async validateToken(): Promise<boolean> {
+    const token = this.getToken();
+    if (!token) return false;
+
+    try {
+      const response = await fetch('/api/auth/validate', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Token validation failed:', error);
+      return false;
+    }
   },
   async refreshToken(): Promise<AuthResponse | null> {
     const refreshToken = localStorage.getItem("refreshToken");
@@ -170,6 +197,12 @@ const authService = {
 
   hasRole(role: string): boolean {
     return this.getUserRoles().includes(role);
+  },
+  getUserId(): string | null {
+    const token = this.getToken();
+    if (!token) return null;
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || null;
   }
 };
 

@@ -4,6 +4,7 @@ import Image from 'next/image';
 
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import authService from '../services/authService';
 
 import "./header.css";
 
@@ -14,6 +15,15 @@ const Header = () => {
         logout();
         router.push('/');
     }
+    const handleProtectedLinkClick = async (href: string) => {
+        const isValid = await authService.validateToken();
+        if (isValid) {
+            router.push(href);
+        } else {
+            logout();
+            router.push('/login');
+        }
+    };
     return (
         <header>
             <div className="header__logo">
@@ -42,21 +52,36 @@ const Header = () => {
                             {/* Показываем кнопку админки только админам */}
                             {hasRole('Admin') && (
                                 <li>
-                                    <Link href="/adminpanel">
+                                    <Link 
+                                        href="/adminpanel"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleProtectedLinkClick('/adminpanel');
+                                        }}>
                                         <span className="hover:text-gray-300">Админ панель</span>
                                     </Link>
                                 </li>
                             )}
                             {hasRole('Moderator') && (
                                 <li>
-                                    <Link href="/moderation">
+                                    <Link 
+                                        href="/moderation"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleProtectedLinkClick('/moderation');
+                                        }}>
                                         <span className="hover:text-gray-300">Модерация</span>
                                     </Link>
                                 </li>
                             )}
                             
                             <li>
-                                <Link href="/profile">
+                                <Link 
+                                    href="/profile"
+                                    onClick={(e) => {
+                                            e.preventDefault();
+                                            handleProtectedLinkClick('/profile');
+                                        }}>
                                     <span className="hover:text-gray-300">Профиль</span>
                                 </Link>
                                 <button

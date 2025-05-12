@@ -2,14 +2,17 @@
 import { fabric } from 'fabric';
 import { toast } from 'sonner'
 import CryptoJS from 'crypto-js';
+import axios from 'axios';
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import authService from '../services/authService';
+import { useAuth } from '../contexts/AuthContext';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import useLayers, { Layer } from './Layers/useLayers';
 import { SerializedFabricFilter } from './Layers/useLayers';
 import { saveStateToIndexedDB, getStateFromIndexedDB, clearStateFromIndexedDB } from '@/app/utils/db';
 import { createFilterByName } from '../utils/lib';
+import {products} from './ProductModal/productModal';
 
 import ProductModal from './ProductModal/productModal';
 import TabbedControls from './tabbedControl';
@@ -18,8 +21,11 @@ import LayersPanel from './Layers/LayersPanel';
 const DesignProduct = () => {
     const searchParams = useSearchParams();
     const designId = searchParams.get('designId');
-    
-    const [selectedProduct, setSelectedProduct] = useState<{id: string; type: string} | null>(null);
+
+    const { isAuthenticated, hasRole } = useAuth();
+    const [designAuthorId, setDesignAuthorId] = useState<string | null>(null);
+
+    const [selectedProduct, setSelectedProduct] = useState<{id: string; type: string}>({id:"shirt", type:"3D"});
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [selectedObject, setSelectedObject] = useState<fabric.Object | null>(null);
     const [currentText, setCurrentText] = useState('Your Text Here');
@@ -49,18 +55,19 @@ const DesignProduct = () => {
 
     useEffect(() => {
         const initializeCanvasAndLayers = async () => {
-
             if (hasInitialized.current) return;
             hasInitialized.current = true;
             let savedState: string | null = null;
+            let remoteState: { designData?: string; productType?: string } = {};
             setLayers([]);
 
             if (designId){
                 try {
-                    const remoteDesign = await authService.axiosWithRefresh<{ designData?: string }>('get', `/Design/${designId}`);
+                    const remoteDesign = await authService.axiosWithRefresh<{ designData?: string; userId?: string }>('get', `/Design/${designId}`);
                     if (remoteDesign && remoteDesign.designData) {
+                        remoteState = remoteDesign;
                         savedState = remoteDesign.designData;
-                        console.log('Fetched design from remote:', JSON.parse(remoteDesign.designData));
+                        setDesignAuthorId(remoteDesign.userId || null);
                     } else {
                         console.warn('No design data found for designId:', designId);
                     }
@@ -73,7 +80,6 @@ const DesignProduct = () => {
                 savedState = await getStateFromIndexedDB();
             }
             
-            console.log('Saved state:', savedState);
             if (!canvasRef.current) {
                 const canvas = new fabric.Canvas('canvas', {
                     width: canvasSize.width,
@@ -108,7 +114,6 @@ const DesignProduct = () => {
             }
     
             if (!savedState) return;
-    
             const {
                 selectedProduct: savedProduct,
                 layers: savedLayers,
@@ -117,10 +122,9 @@ const DesignProduct = () => {
                 canvasSize: savedSize,
             } = JSON.parse(savedState);
 
-
-    
             // Устанавливаем состояния
-            setSelectedProduct(savedProduct);
+            setSelectedProduct(savedProduct ? savedProduct : {id: remoteState.productType, type: products.find((p) => p.id === remoteState.productType)?.type || 'regular'});
+            // setSelectedProduct(savedProduct);
             setSelectedLayerId(savedLayerId);
             setCurrentText(savedText ?? 'Your Text Here');
             setCanvasSize(savedSize);
@@ -132,7 +136,6 @@ const DesignProduct = () => {
                     setTimeout(() => resolve(), 500); // Даем время на загрузку overlayImage
                 });
             }
-
             const canvas = canvasRef.current!;
             // Восстанавливаем слои
             for (const layer of savedLayers) {
@@ -149,6 +152,7 @@ const DesignProduct = () => {
                                 scaleY: layer.height / img.height,
                                 flipX: layer.flipX,
                                 flipY: layer.flipY,
+                                angle: layer.angle || 0,
                                 data: { id: layer.id },
                                 visible: layer.visible
                             });
@@ -206,6 +210,7 @@ const DesignProduct = () => {
                         scaleY: layer.scaleY || 1,
                         flipX: layer.flipX,
                         flipY: layer.flipY,
+                        angle: layer.angle || 0,
                         fontSize: layer.fontSize || 30,
                         data: { id: layer.id },
                         visible: layer.visible,
@@ -442,6 +447,13 @@ const DesignProduct = () => {
         if (!files || files.length === 0) return;
         const file = files[0];
 
+        const maxSizeInBytes = 5 * 1024 * 1024; // 5 MB
+        if (file.size > maxSizeInBytes) {
+            toast.error('Файл слишком большой. Максимальный размер: 5 МБ.');
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = () => {
             const img = new window.Image();
@@ -506,6 +518,7 @@ const DesignProduct = () => {
                         y: fabricImage.top || 0,
                         flipX: false,
                         flipY: false,
+                        angle: 0,
                         width: newWidth,
                         height: newHeight,
                         url: reader.result,
@@ -558,6 +571,7 @@ const DesignProduct = () => {
                 y: text.top || 0,
                 flipX: false,
                 flipY: false,
+                angle: 0,
                 fontSize: 30,
                 width: text.width || 200,
                 height: text.height || 30,
@@ -598,6 +612,7 @@ const DesignProduct = () => {
             const newHeight = target.height! * target.scaleY!;
             const newScaleX = target.scaleX || 1;
             const newScaleY = target.scaleY || 1;
+            const newAngle = target.angle || 0;
     
             setLayers((prevLayers) =>
                 prevLayers.map((layer) =>
@@ -609,6 +624,7 @@ const DesignProduct = () => {
                         height: newHeight,
                         scaleX: newScaleX,
                         scaleY: newScaleY,
+                        angle: newAngle,
                     }
                   : layer
                 )
@@ -689,7 +705,13 @@ const DesignProduct = () => {
         });
       }
 
-    const saveDesign = async () => {
+    const canUpdateDesign = () => {
+        if (!isAuthenticated || !designId || !designAuthorId) return false;
+        const userId = authService.getUserId();
+        return hasRole('Admin') || hasRole('Moderator') || userId === designAuthorId;
+    };
+
+    const saveDesign = async (updateExisting: boolean = false) => {
         if (!canvasRef.current) return;
         
         try {
@@ -752,6 +774,7 @@ const DesignProduct = () => {
 
             // const savedDesign = await saveDesignResponse.json();
             // Создаем объект для корзины с полученным URL изображения
+            
             const cartItem = {
                 design: {
                     id: designId || generateGuid(),
@@ -767,21 +790,47 @@ const DesignProduct = () => {
                 price: 1000 // Здесь нужна логика расчета цены
             };
 
-            const endpoint = designId ? `/cart/update/${designId}` : '/cart/add';
-            const method = designId ? 'put' : 'post';
+            if (updateExisting && canUpdateDesign()) {
+                const updateObj={
+                    name: cartItem.design.name,
+                    description: cartItem.design.description,
+                    previewUrl: imageUrl,
+                    designData: JSON.stringify(designData),
+                    designHash: designHash,
+                    productType: selectedProduct?.id
+                }
+                await authService.axiosWithRefresh('put', `/Design/${designId}`, JSON.stringify(updateObj));
+                await authService.axiosWithRefresh('put', `/cart/update/${designId}`, JSON.stringify(cartItem));
+                toast.success('Дизайн обновлен');
+            } else {
+                await authService.axiosWithRefresh('post', '/cart/add', JSON.stringify(cartItem));
+                toast.success('Товар добавлен в корзину');
+            }
+
+            // const endpoint = designId ? `/cart/update/${designId}` : '/cart/add';
+            // const method = designId ? 'put' : 'post';
             
-            // Добавляем в корзину
-            await authService.axiosWithRefresh(method, endpoint, JSON.stringify(cartItem));
-            toast.success(designId ? 'Дизайн обновлен' : 'Товар добавлен в корзину');
+            // // Добавляем в корзину
+            // await authService.axiosWithRefresh(method, endpoint, JSON.stringify(cartItem));
+            // toast.success(designId ? 'Дизайн обновлен' : 'Товар добавлен в корзину');
         } catch (error: Error | unknown) {
-            console.error('Ошибка:', error);
-            toast.error(`Ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+            let errorMessage = 'Неизвестная ошибка';
+            if (axios.isAxiosError(error) && error.response?.data) {
+                if (axios.isAxiosError(error) && error.response?.data) {
+                    errorMessage = JSON.stringify(error.response.data);
+                }
+            } else if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+            console.error('Ошибка:', errorMessage);
+            toast.error(`Ошибка: ${errorMessage}`);
         }
     };
 
     const getAllObjects = () =>{
         console.log('Canvas Objects:', canvasRef.current?.getObjects());
         console.log('Layers:', layers);
+        console.log('selectedProduct: ', selectedProduct);
     }
 
     const resetDesign = async () => {
@@ -805,7 +854,7 @@ const DesignProduct = () => {
 
           });
         }
-        setSelectedProduct(null);
+        setSelectedProduct({id:"shirt", type:"3D"});
         setSelectedLayerId(null);
         setCurrentText('Your Text Here');
         layers.forEach((layer) => removeLayer(layer.id));
@@ -882,9 +931,14 @@ const DesignProduct = () => {
                 <button onClick={handleAddText}>Добавить текст</button>
                 <button onClick={() => setIsProductModalOpen(true)}>Выбрать товар</button>
                 <button onClick={getAllObjects}>Get All Objects</button>
-                <button onClick={saveDesign}>
-                    {designId ? 'Сохранить дизайн' : 'Добавить в корзину'}
+                <button onClick={() => saveDesign(false)}>
+                    {designId && !canUpdateDesign() ? 'Добавить в корзину' : 'Сохранить как новый дизайн'}
                 </button>
+                {designId && canUpdateDesign() && (
+                    <button onClick={() => saveDesign(true)}>
+                        Обновить существующий дизайн
+                    </button>
+                )}
                 <button onClick={resetDesign}>Очистить дизайн</button>
                 {designId && (
                     <button

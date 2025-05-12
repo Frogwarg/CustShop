@@ -116,14 +116,15 @@ export default function Register() {
     setSubmitting(true);
     try {
         const response = await authService.register({
-        email: formData.email,
-        password: formData.password,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phoneNumber: formData.phoneNumber
-      });
-      
-      console.log('Ответ сервера:', response);
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phoneNumber: formData.phoneNumber
+        });
+      if (!response) {
+        throw new Error('Ошибка регистрации');
+      }
       await login(formData.email, formData.password);
       await refreshCart();
       router.push('/');

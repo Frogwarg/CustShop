@@ -1,6 +1,6 @@
 ﻿namespace DevAPI.Models.DTOs
 {
-    public class CatalogItemDto
+    public class CatalogItemDetailsDto
     {
         public Guid Id { get; set; }
         public Guid DesignId { get; set; }
@@ -11,6 +11,10 @@
         public string Tags { get; set; }
         public string PreviewUrl { get; set; }
         public string ProductType { get; set; }
-
+        public string DesignData { get; set; }
+        public string AuthorName { get; set; }
+        public List<string> Sizes { get; set; }
+        public List<string> Materials { get; set; }
+        public string AdditionalInfo { get; set; }
     }
 }

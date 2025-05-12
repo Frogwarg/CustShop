@@ -17,13 +17,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = authService.getToken();
-    setIsAuthenticated(!!token);
-    setLoading(false);
+    const checkAuth = async () => {
+      setLoading(true);
+      let isValid = await authService.validateToken();
+      if (!isValid) {
+        const refreshResult = await authService.refreshToken();
+        isValid = !!refreshResult;
+        if (refreshResult) {
+          authService.setToken(refreshResult.token, refreshResult.expiration);
+        }
+      }
+      setIsAuthenticated(isValid);
+      setLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
-    await authService.login({ email, password });
+    const response = await authService.login({ email, password });
+    authService.setToken(response.token, response.expiration);
     setIsAuthenticated(true);
   };
 
