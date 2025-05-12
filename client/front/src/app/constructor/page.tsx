@@ -79,7 +79,6 @@ const DesignProduct = () => {
             if (!savedState) {
                 savedState = await getStateFromIndexedDB();
             }
-            
             if (!canvasRef.current) {
                 const canvas = new fabric.Canvas('canvas', {
                     width: canvasSize.width,
@@ -732,6 +731,7 @@ const DesignProduct = () => {
             });
 
             // Подготавливаем данные дизайна
+            console.log('selectedProduct: ',selectedProduct);
             const designData = {
                 canvasSize,
                 prodType: selectedProduct,
