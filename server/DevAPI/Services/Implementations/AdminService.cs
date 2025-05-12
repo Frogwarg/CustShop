@@ -87,14 +87,11 @@ namespace DevAPI.Services.Implementations
                 .Select(o => new OrderDto
                 {
                     Id = o.Id,
-                    UserEmail = o.User.Email,
                     TotalAmount = o.TotalAmount,
                     DiscountAmount = o.DiscountAmount,
                     Status = o.Status,
                     PaymentStatus = o.PaymentStatus,
                     CreatedAt = o.CreatedAt,
-                    AdminComment = o.AdminComment,
-                    ItemCount = o.OrderItems.Count
                 })
                 .ToListAsync();
         }

@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import CartItem from './cartitem';
 import ShareDesignForm from './ShareDesign/ShareDesignForm';
 
-
 interface CartItem {
     id: number;
     design: {
@@ -62,6 +61,10 @@ export default function Cart() {
         setShareFormDesignId(designId);
     };
 
+    const handleCheckout = () => {
+        router.push('/checkout');
+    };
+
     return (
         <div>
             {cartItems.length === 0 ? (
@@ -81,6 +84,21 @@ export default function Cart() {
                     <div>
                         Итого: {cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)} руб.
                     </div>
+                    <button
+                        onClick={handleCheckout}
+                        disabled={cartItems.length === 0}
+                        style={{
+                        padding: '10px 20px',
+                        backgroundColor: cartItems.length === 0 ? '#ccc' : '#0070f3',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: cartItems.length === 0 ? 'not-allowed' : 'pointer',
+                        marginTop: '20px',
+                        }}
+                    >
+                        Оформить заказ
+                    </button>
                 </div>
             )}
             {shareFormDesignId && (

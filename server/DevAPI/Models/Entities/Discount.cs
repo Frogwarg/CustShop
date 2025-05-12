@@ -5,7 +5,8 @@
         public Guid Id { get; set; }
         public string Code { get; set; }
         public decimal Amount { get; set; }
-        public string DiscountType { get; set; }
+        public string DiscountType { get; set; } // "Percentage" или "Fixed"
+        public decimal? MinimumOrderAmount { get; set; }
         public DateTime ValidFrom { get; set; }
         public DateTime ValidTo { get; set; }
         public int UsageLimit { get; set; }

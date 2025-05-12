@@ -1,0 +1,95 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.checkoutGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form h2 {
+  margin: 20px 0 10px;
+  font-size: 1.5rem;
+}
+
+.form input,
+.form select,
+.form textarea {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.form textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form button {
+  padding: 15px;
+  background-color: #0070f3;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.form button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.cartSummary {
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+}
+
+.cartItem {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.preview {
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.itemDetails h3 {
+  margin: 0 0 10px;
+  font-size: 1.2rem;
+}
+
+.itemDetails p {
+  margin: 5px 0;
+}
+
+.total {
+  margin-top: 20px;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.error {
+  color: red;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .checkoutGrid {
+    grid-template-columns: 1fr;
+  }
+}

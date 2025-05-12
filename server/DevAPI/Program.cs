@@ -41,7 +41,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowNextJS", builder =>
     {
-        builder.WithOrigins("http://localhost:3000", "http://192.168.100.125:3000") // URL Next.js
+        builder.WithOrigins("http://localhost:3000", "http://192.168.100.125:3000", "http://192.168.100.82:3000") // URL Next.js
                .AllowAnyHeader()
                .AllowAnyMethod()
                .AllowCredentials();
@@ -104,6 +104,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IDesignService, DesignService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<RoleManager<Role>>();
 
 builder.Services.AddControllers();

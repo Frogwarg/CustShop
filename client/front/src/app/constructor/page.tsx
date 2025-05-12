@@ -122,8 +122,12 @@ const DesignProduct = () => {
             } = JSON.parse(savedState);
 
             // Устанавливаем состояния
-            setSelectedProduct(savedProduct ? savedProduct : {id: remoteState.productType, type: products.find((p) => p.id === remoteState.productType)?.type || 'regular'});
-            // setSelectedProduct(savedProduct);
+            setSelectedProduct(savedProduct ? 
+                savedProduct : 
+                    remoteState ? 
+                    {id: remoteState.productType, type: products.find((p) => p.id === remoteState.productType)?.type || 'regular'} :
+                    {id: 'shirt', type: '3D'}
+                );
             setSelectedLayerId(savedLayerId);
             setCurrentText(savedText ?? 'Your Text Here');
             setCanvasSize(savedSize);
@@ -469,7 +473,6 @@ const DesignProduct = () => {
 
                 const scaleX = newWidth / img.width;
                 const scaleY = newHeight / img.height;
-                // const newHeight = newWidth / aspectRatio;
                 const layerId = 'layer-' + Date.now();
                 const fabricImage = new fabric.Image(img, {
                     left: (canvasSize.width - newWidth) / 2,
@@ -587,7 +590,7 @@ const DesignProduct = () => {
         if (canvas) {
             const obj = canvas.getObjects().find((o) => o.data?.id === layerId);
             if (obj) {
-                canvas.setActiveObject(obj); // Выделяем объект на канвасе
+                canvas.setActiveObject(obj);
                 canvas.renderAll();
             }
         }
@@ -631,10 +634,9 @@ const DesignProduct = () => {
         };
     
         const handleSelection = (event: fabric.IEvent) => {
-            const target = event.selected ? event.selected[0] : null; // Получаем первый объект из массива selected
+            const target = event.selected ? event.selected[0] : null;
             if (target && target.data?.id) {
                 // Перемещаем объект на самый верх
-                //const originalIndex = canvas.getObjects().indexOf(target);
                 const canvasIndex = canvas.getObjects().indexOf(target);
                 originalIndices.set(target, canvasIndex);
 
@@ -774,7 +776,6 @@ const DesignProduct = () => {
 
             // const savedDesign = await saveDesignResponse.json();
             // Создаем объект для корзины с полученным URL изображения
-            
             const cartItem = {
                 design: {
                     id: designId || generateGuid(),
@@ -806,13 +807,6 @@ const DesignProduct = () => {
                 await authService.axiosWithRefresh('post', '/cart/add', JSON.stringify(cartItem));
                 toast.success('Товар добавлен в корзину');
             }
-
-            // const endpoint = designId ? `/cart/update/${designId}` : '/cart/add';
-            // const method = designId ? 'put' : 'post';
-            
-            // // Добавляем в корзину
-            // await authService.axiosWithRefresh(method, endpoint, JSON.stringify(cartItem));
-            // toast.success(designId ? 'Дизайн обновлен' : 'Товар добавлен в корзину');
         } catch (error: Error | unknown) {
             let errorMessage = 'Неизвестная ошибка';
             if (axios.isAxiosError(error) && error.response?.data) {
