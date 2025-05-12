@@ -37,7 +37,10 @@ namespace DevAPI.Controllers
                 Guid? userId = User.Identity.IsAuthenticated
                     ? Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value)
                     : null;
-                var design = await _designService.GetDesignById(designId, userId);
+                var sessionId = userId.HasValue
+                    ? null
+                    : HttpContext.Request.Cookies["cart_session_id"];
+                var design = await _designService.GetDesignById(designId, userId, sessionId);
                 if (design == null)
                 {
                     return NotFound("Дизайн не найден или вы не имеете к нему доступа.");

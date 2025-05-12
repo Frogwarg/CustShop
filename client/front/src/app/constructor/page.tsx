@@ -12,7 +12,7 @@ import useLayers, { Layer } from './Layers/useLayers';
 import { SerializedFabricFilter } from './Layers/useLayers';
 import { saveStateToIndexedDB, getStateFromIndexedDB, clearStateFromIndexedDB } from '@/app/utils/db';
 import { createFilterByName } from '../utils/lib';
-import {Product, categories, products} from './ProductModal/productModal';
+import {products} from './ProductModal/productModal';
 
 import ProductModal from './ProductModal/productModal';
 import TabbedControls from './tabbedControl';
@@ -25,7 +25,7 @@ const DesignProduct = () => {
     const { isAuthenticated, hasRole } = useAuth();
     const [designAuthorId, setDesignAuthorId] = useState<string | null>(null);
 
-    const [selectedProduct, setSelectedProduct] = useState<{id: string; type: string} | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<{id: string; type: string}>({id:"shirt", type:"3D"});
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [selectedObject, setSelectedObject] = useState<fabric.Object | null>(null);
     const [currentText, setCurrentText] = useState('Your Text Here');
@@ -65,7 +65,6 @@ const DesignProduct = () => {
                 try {
                     const remoteDesign = await authService.axiosWithRefresh<{ designData?: string; userId?: string }>('get', `/Design/${designId}`);
                     if (remoteDesign && remoteDesign.designData) {
-                        console.log('remoteDesign: ', remoteDesign);
                         remoteState = remoteDesign;
                         savedState = remoteDesign.designData;
                         setDesignAuthorId(remoteDesign.userId || null);
@@ -80,8 +79,6 @@ const DesignProduct = () => {
             if (!savedState) {
                 savedState = await getStateFromIndexedDB();
             }
-            
-            //console.log('Saved state:', savedState);
             if (!canvasRef.current) {
                 const canvas = new fabric.Canvas('canvas', {
                     width: canvasSize.width,
@@ -116,7 +113,6 @@ const DesignProduct = () => {
             }
     
             if (!savedState) return;
-            console.log('Сохраненное состояние: ',JSON.parse(savedState));
             const {
                 selectedProduct: savedProduct,
                 layers: savedLayers,
@@ -125,10 +121,9 @@ const DesignProduct = () => {
                 canvasSize: savedSize,
             } = JSON.parse(savedState);
 
-    
             // Устанавливаем состояния
-            // setSelectedProduct(savedProduct ? savedProduct : {id: remoteState.productType, type: products.find((p) => p.id === remoteState.productType)?.type || 'regular'});
-            setSelectedProduct(savedProduct);
+            setSelectedProduct(savedProduct ? savedProduct : {id: remoteState.productType, type: products.find((p) => p.id === remoteState.productType)?.type || 'regular'});
+            // setSelectedProduct(savedProduct);
             setSelectedLayerId(savedLayerId);
             setCurrentText(savedText ?? 'Your Text Here');
             setCanvasSize(savedSize);
@@ -140,7 +135,6 @@ const DesignProduct = () => {
                     setTimeout(() => resolve(), 500); // Даем время на загрузку overlayImage
                 });
             }
-
             const canvas = canvasRef.current!;
             // Восстанавливаем слои
             for (const layer of savedLayers) {
@@ -781,7 +775,6 @@ const DesignProduct = () => {
             // const savedDesign = await saveDesignResponse.json();
             // Создаем объект для корзины с полученным URL изображения
             
-            console.log('selectedProduct.id: ',selectedProduct?.id);
             const cartItem = {
                 design: {
                     id: designId || generateGuid(),
@@ -822,7 +815,7 @@ const DesignProduct = () => {
             // toast.success(designId ? 'Дизайн обновлен' : 'Товар добавлен в корзину');
         } catch (error: Error | unknown) {
             let errorMessage = 'Неизвестная ошибка';
-            if (axios.isAxiosError(error as any) && (error as any).response?.data) {
+            if (axios.isAxiosError(error) && error.response?.data) {
                 if (axios.isAxiosError(error) && error.response?.data) {
                     errorMessage = JSON.stringify(error.response.data);
                 }
@@ -837,6 +830,7 @@ const DesignProduct = () => {
     const getAllObjects = () =>{
         console.log('Canvas Objects:', canvasRef.current?.getObjects());
         console.log('Layers:', layers);
+        console.log('selectedProduct: ', selectedProduct);
     }
 
     const resetDesign = async () => {
@@ -860,7 +854,7 @@ const DesignProduct = () => {
 
           });
         }
-        setSelectedProduct(null);
+        setSelectedProduct({id:"shirt", type:"3D"});
         setSelectedLayerId(null);
         setCurrentText('Your Text Here');
         layers.forEach((layer) => removeLayer(layer.id));

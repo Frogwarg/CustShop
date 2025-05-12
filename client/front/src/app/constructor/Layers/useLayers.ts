@@ -104,8 +104,6 @@ const useLayers = (canvasRef: React.MutableRefObject<fabric.Canvas | null>) => {
             const obj = canvas.getObjects().find((o) => o.data?.id === layerId);
             if (obj) {
                 obj.set({ visible: !obj.visible }); // Обновляем видимость объекта
-                console.log('layer.id:', layerId);
-                console.log('new obj', obj);
                 canvas.renderAll();
             }
         }

@@ -19,7 +19,7 @@ namespace DevAPI.Services.Implementations
             _logger = logger;
         }
 
-        public async Task<DesignDto?> GetDesignById(Guid designId, Guid? userId)
+        public async Task<DesignDto?> GetDesignById(Guid designId, Guid? userId, string sessionId)
         {
             var design = await _context.Designs
                 .Include(d => d.DesignType)
@@ -53,22 +53,36 @@ namespace DevAPI.Services.Implementations
             }
 
             // Для непубличных дизайнов проверяем, является ли пользователь автором или имеет дизайн в корзине
-            if (!userId.HasValue)
+            if (userId.HasValue)
             {
-                _logger.LogWarning($"Неавторизованный пользователь пытался получить непубличный дизайн {designId}");
+                var isOwnerOrInCart = await _context.Designs
+                    .AnyAsync(d => d.Id == designId &&
+                                  (d.UserId == userId || d.CartItems.Any(ci => ci.UserId == userId)));
+
+                if (!isOwnerOrInCart)
+                {
+                    _logger.LogWarning($"Дизайн {designId} не принадлежит пользователю {userId} и не находится в его корзине");
+                    return null;
+                }
+            }
+            else if (!string.IsNullOrEmpty(sessionId))
+            {
+                var isInCart = await _context.CartItems
+                    .AnyAsync(ci => ci.DesignId == designId && ci.SessionId == sessionId);
+
+                if (!isInCart)
+                {
+                    _logger.LogWarning($"Дизайн {designId} не найден в корзине неавторизованного пользователя с sessionId {sessionId}");
+                    return null;
+                }
+            }
+            else
+            {
+                _logger.LogWarning($"Неавторизованный пользователь без sessionId пытался получить непубличный дизайн {designId}");
                 return null;
             }
 
-            var isOwnerOrInCart = await _context.Designs
-                .AnyAsync(d => d.Id == designId && (d.UserId == userId || d.CartItems.Any(ci => ci.UserId == userId)));
-
-            if (!isOwnerOrInCart)
-            {
-                _logger.LogWarning($"Дизайн {designId} не принадлежит пользователю {userId} и не находится в его корзине");
-                return null;
-            }
-
-            _logger.LogInformation($"Дизайн {designId} успешно получен пользователем {userId}");
+            _logger.LogInformation($"Дизайн {designId} успешно получен пользователем {userId?.ToString() ?? "неавторизованным"} с sessionId {sessionId ?? "отсутствует"}");
             return design;
         }
 

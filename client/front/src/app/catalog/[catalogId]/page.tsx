@@ -35,7 +35,6 @@ const ProductPage = () => {
         try {
           const response = await fetch(`/api/catalog/${catalogId}`);
           const data = await response.json();
-          console.log('Fetched product:', data);
           setProduct(data);
           setSelectedSize(data.sizes[0] || '');
           setLoading(false);
