@@ -1,6 +1,7 @@
 ﻿using DevAPI.Exceptions;
 using DevAPI.Models.DTOs;
 using DevAPI.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
@@ -105,6 +106,12 @@ namespace DevAPI.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+        [HttpGet("validate")]
+        [Authorize] // Требует валидный JWT токен
+        public IActionResult ValidateToken()
+        {
+            return Ok(new { message = "Token is valid" });
         }
     }
 }

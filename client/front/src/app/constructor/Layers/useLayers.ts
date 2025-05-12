@@ -22,7 +22,7 @@ export interface Layer {
     fill?: string;
     flipX?: boolean;
     flipY?: boolean;
-    rotation?: number;
+    angle?: number;
     visible?: boolean;
     scaleX?: number;
     scaleY?: number;

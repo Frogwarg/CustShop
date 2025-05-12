@@ -16,7 +16,7 @@
     "html-to-image": "^1.11.11",
     "idb": "^8.0.2",
     "konva": "^9.3.18",
-    "next": "^15.1.4",
+    "next": "^15.3.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-konva": "^19.0.1",
@@ -25,6 +25,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/crypto-js": "^4.2.2",
+    "@types/next": "^9.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

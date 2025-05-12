@@ -89,6 +89,10 @@ namespace DevAPI.Services
                 Description = design.Description,
                 PreviewUrl = design.PreviewUrl,
                 ProductType = design.ProductType,
+                DesignData = design.DesignData,
+                DesignHash = design.DesignHash,
+                UserId = design.UserId.ToString(),
+                ModerationStatus = design.ModerationStatus
             };
         }
 

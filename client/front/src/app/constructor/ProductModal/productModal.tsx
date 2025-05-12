@@ -1,12 +1,19 @@
 import Image from 'next/image';
 import "./productModal.css";
 
-interface Product {
+export interface Product {
     id: string;
     type: string;
     name: string;
     image: string;
 }
+
+export const categories = ['Категория 1', 'Категория 2', 'Категория 3']; // Пример категорий
+export const products: Product[] = [
+    { id: 'shirt', type: '3D', name: 'Майка', image: '/products/shirt-mask.png' },
+    { id: 'mug', type: 'regular', name: 'Кружка', image: '/products/mug-mask.png' },
+    { id: 'pillow', type: 'regular', name: 'Подушка', image: '/products/pillow-mask.png' },
+];
 
 const ProductModal = ({ isOpen, onClose, onSelectProduct }: { 
     isOpen: boolean; 
@@ -15,12 +22,7 @@ const ProductModal = ({ isOpen, onClose, onSelectProduct }: {
 }) => {
     if (!isOpen) return null;
 
-    const categories = ['Категория 1', 'Категория 2', 'Категория 3']; // Пример категорий
-    const products: Product[] = [
-        { id: 'shirt', type: '3D', name: 'Майка', image: '/products/shirt-mask.png' },
-        { id: 'mug', type: 'regular', name: 'Кружка', image: '/products/mug-mask.png' },
-        { id: 'pillow', type: 'regular', name: 'Подушка', image: '/products/pillow-mask.png' },
-    ];
+
 
     return (
         <div className='constructor__product_modal'>

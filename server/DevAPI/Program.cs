@@ -30,18 +30,24 @@ builder.Services.AddDbContext<StoreDbContext>(options =>
 //{
 //    var selector = serviceProvider.GetRequiredService<ConnectionStringSelector>();
 //    var connectionString = selector.GetConnectionString();
-//    options.UseNpgsql(connectionString);
+//    options.UseNpgsql(connectionString, npgsqlOptions =>
+//        npgsqlOptions.EnableRetryOnFailure(
+//            maxRetryCount: 5, // Максимум 5 попыток
+//            maxRetryDelay: TimeSpan.FromSeconds(10), // Задержка до 10 секунд между попытками
+//            errorCodesToAdd: null // Автоматически обрабатывать все транзиентные ошибки
+//        ));
 //});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowNextJS", builder =>
     {
-        builder.WithOrigins("http://localhost:3000") // URL Next.js
+        builder.WithOrigins("http://localhost:3000", "http://192.168.100.125:3000") // URL Next.js
                .AllowAnyHeader()
                .AllowAnyMethod()
                .AllowCredentials();
     });
 });
+builder.WebHost.UseUrls("http://0.0.0.0:5123", "https://0.0.0.0:7036", "http://localhost:5123", "https://localhost:7036");
 builder.Services.AddIdentity<User, Role>(options => {
     options.Password.RequiredLength = 8;
     options.Password.RequireNonAlphanumeric = true;
