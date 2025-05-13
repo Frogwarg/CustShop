@@ -21,6 +21,11 @@
   font-size: 1.5rem;
 }
 
+.form div {
+  display: flex;
+  flex-direction: column;
+}
+
 .form input,
 .form select,
 .form textarea {
@@ -28,6 +33,10 @@
   border: 1px solid #ccc;
   border-radius: 5px;
   font-size: 1rem;
+}
+
+.form input.inputError {
+  border-color: red;
 }
 
 .form textarea {
@@ -86,6 +95,12 @@
 .error {
   color: red;
   margin-bottom: 20px;
+}
+
+.fieldError {
+  color: red;
+  font-size: 0.9rem;
+  margin-top: 5px;
 }
 
 @media (max-width: 768px) {

@@ -2,8 +2,11 @@
 import { useState, useEffect } from 'react';
 import authService from '../services/authService';
 import { useRouter } from 'next/navigation';
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
 import Image from 'next/image';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import styles from './Checkout.module.css';
 
 interface ErrorResponse {
@@ -52,32 +55,82 @@ interface OrderResponse {
   createdAt: string;
 }
 
+// Схема валидации с помощью Zod
+const schema = z.object({
+  firstName: z.string().min(1, 'Имя обязательно').regex(/^[a-zA-Zа-яА-Я]*$/, 'Только буквы'),
+  lastName: z.string().min(1, 'Фамилия обязательна').regex(/^[a-zA-Zа-яА-Я]*$/, 'Только буквы'),
+  middleName: z.string().regex(/^[a-zA-Zа-яА-Я]*$/, 'Только буквы').optional().or(z.literal('')),
+  email: z.string().email('Неверный формат email'),
+  phoneNumber: z.string().regex(/^\d+$/, 'Только цифры').min(10, 'Минимум 10 цифр'),
+  deliveryMethod: z.enum(['Delivery', 'Pickup']),
+  street: z.string().optional().or(z.literal('')),
+  city: z.string().regex(/^[a-zA-Zа-яА-Я\s-]*$/, 'Только буквы').optional().or(z.literal('')),
+  state: z.string().optional().or(z.literal('')),
+  postalCode: z.string().regex(/^\d*$/, 'Только цифры').optional().or(z.literal('')),
+  country: z.string().regex(/^[a-zA-Zа-яА-Я\s-]*$/, 'Только буквы').optional().or(z.literal('')),
+  discountCode: z.string().optional(),
+  orderComment: z.string().optional(),
+}).refine(
+  (data) => {
+    if (data.deliveryMethod === 'Delivery') {
+      return (
+        data.street &&
+        data.city &&
+        data.state &&
+        data.postalCode &&
+        data.country
+      );
+    }
+    return true;
+  },
+  {
+    message: 'Все поля адреса обязательны для доставки',
+    path: ['street'], // Указываем поле, где показывать ошибку
+  }
+);
+
+type FormData = z.infer<typeof schema>;
+
 const CheckoutPage = () => {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    middleName: '',
-    email: '',
-    phoneNumber: '',
-    deliveryMethod: 'Delivery',
-    street: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: '',
-    discountCode: '',
-    orderComment: '',
-  });
+  // const [formData, setFormData] = useState({
+  //   firstName: '',
+  //   lastName: '',
+  //   middleName: '',
+  //   email: '',
+  //   phoneNumber: '',
+  //   deliveryMethod: 'Delivery',
+  //   street: '',
+  //   city: '',
+  //   state: '',
+  //   postalCode: '',
+  //   country: '',
+  //   discountCode: '',
+  //   orderComment: '',
+  // });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Настройка формы с react-hook-form
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      deliveryMethod: 'Delivery',
+    },
+  });
+
+  const deliveryMethod = watch('deliveryMethod');
 
   // Загрузка корзины при монтировании компонента
   useEffect(() => {
     const fetchCart = async () => {
       try {
-        // const response = await axios.get('/api/cart');
         const response = await authService.axiosWithRefresh<CartItem[]>('get', '/cart');
         console.log('Cart items:', response);
         setCartItems(response);
@@ -89,42 +142,42 @@ const CheckoutPage = () => {
   }, []);
 
   // Обработка изменений в форме
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  // const handleInputChange = (
+  //   e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  // ) => {
+  //   const { name, value } = e.target;
+  //   setFormData((prev) => ({ ...prev, [name]: value }));
+  // };
 
   // Отправка заказа
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: FormData) => {
     setLoading(true);
     setError(null);
 
     try {
       const orderData = {
-        deliveryMethod: formData.deliveryMethod,
-        orderComment: formData.orderComment,
+        deliveryMethod: data.deliveryMethod,
+        orderComment: data.orderComment || '',
         address: {
-          street: formData.street,
-          city: formData.city,
-          state: formData.state,
-          postalCode: formData.postalCode,
-          country: formData.country,
+          street: data.street || '',
+          city: data.city || '',
+          state: data.state || '',
+          postalCode: data.postalCode || '',
+          country: data.country || '',
         },
-        discountCode: formData.discountCode,
+        discountCode: data.discountCode || '',
         userInfo: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          middleName: formData.middleName,
-          email: formData.email,
-          phoneNumber: formData.phoneNumber,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          middleName: data.middleName || '',
+          email: data.email,
+          phoneNumber: data.phoneNumber,
         },
       };
 
-      const response = await axios.post<OrderResponse>('/api/order', orderData);
-      router.push(`/order-confirmation?orderId=${response.data.id}`);
+      // const response = await axios.post<OrderResponse>('/api/order', orderData);
+      const response = await authService.axiosWithRefresh<OrderResponse>('post', '/order', orderData);
+      router.push(`/order-confirmation?orderId=${response.id}`);
     } catch (err: unknown) {
         if (err instanceof AxiosError) {
             const axiosError = err as AxiosError<ErrorResponse>;
@@ -147,118 +200,116 @@ const CheckoutPage = () => {
 
       <div className={styles.checkoutGrid}>
         {/* Форма заказа */}
-        <form onSubmit={handleSubmit} className={styles.form}>
+        <form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
           <h2>Контактные данные</h2>
-          <input
-            type="text"
-            name="firstName"
-            value={formData.firstName}
-            onChange={handleInputChange}
-            placeholder="Имя"
-            required
-          />
-          <input
-            type="text"
-            name="lastName"
-            value={formData.lastName}
-            onChange={handleInputChange}
-            placeholder="Фамилия"
-            required
-          />
-          <input
-            type="text"
-            name="middleName"
-            value={formData.middleName}
-            onChange={handleInputChange}
-            placeholder="Отчество"
-          />
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            placeholder="Электронная почта"
-            required
-          />
-          <input
-            type="tel"
-            name="phoneNumber"
-            value={formData.phoneNumber}
-            onChange={handleInputChange}
-            placeholder="Телефон"
-            required
-          />
+          <div>
+            <input
+              {...register('firstName')}
+              placeholder="Имя"
+              className={errors.firstName ? styles.inputError : ''}
+            />
+            {errors.firstName && <p className={styles.fieldError}>{errors.firstName.message}</p>}
+          </div>
+          <div>
+            <input
+              {...register('lastName')}
+              placeholder="Фамилия"
+              className={errors.lastName ? styles.inputError : ''}
+            />
+            {errors.lastName && <p className={styles.fieldError}>{errors.lastName.message}</p>}
+          </div>
+          <div>
+            <input
+              {...register('middleName')}
+              placeholder="Отчество"
+              className={errors.middleName ? styles.inputError : ''}
+            />
+            {errors.middleName && <p className={styles.fieldError}>{errors.middleName.message}</p>}
+          </div>
+          <div>
+            <input
+              {...register('email')}
+              placeholder="Электронная почта"
+              className={errors.email ? styles.inputError : ''}
+            />
+            {errors.email && <p className={styles.fieldError}>{errors.email.message}</p>}
+          </div>
+          <div>
+            <input
+              {...register('phoneNumber')}
+              placeholder="Телефон"
+              className={errors.phoneNumber ? styles.inputError : ''}
+            />
+            {errors.phoneNumber && <p className={styles.fieldError}>{errors.phoneNumber.message}</p>}
+          </div>
 
           <h2>Способ доставки</h2>
-          <select
-            name="deliveryMethod"
-            value={formData.deliveryMethod}
-            onChange={handleInputChange}
-          >
+          <select {...register('deliveryMethod')}>
             <option value="Delivery">Доставка</option>
             <option value="Pickup">Самовывоз</option>
           </select>
 
-          {formData.deliveryMethod === 'Delivery' && (
+          {deliveryMethod === 'Delivery' && (
             <>
               <h2>Адрес доставки</h2>
-              <input
-                type="text"
-                name="street"
-                value={formData.street}
-                onChange={handleInputChange}
-                placeholder="Улица"
-                required
-              />
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleInputChange}
-                placeholder="Город"
-                required
-              />
-              <input
-                type="text"
-                name="state"
-                value={formData.state}
-                onChange={handleInputChange}
-                placeholder="Область/регион"
-                required
-              />
-              <input
-                type="text"
-                name="postalCode"
-                value={formData.postalCode}
-                onChange={handleInputChange}
-                placeholder="Почтовый индекс"
-                required
-              />
-              <input
-                type="text"
-                name="country"
-                value={formData.country}
-                onChange={handleInputChange}
-                placeholder="Страна"
-                required
-              />
+              <div>
+                <input
+                  {...register('street')}
+                  placeholder="Улица"
+                  className={errors.street ? styles.inputError : ''}
+                />
+                {errors.street && <p className={styles.fieldError}>{errors.street.message}</p>}
+              </div>
+              <div>
+                <input
+                  {...register('city')}
+                  placeholder="Город"
+                  className={errors.city ? styles.inputError : ''}
+                />
+                {errors.city && <p className={styles.fieldError}>{errors.city.message}</p>}
+              </div>
+              <div>
+                <input
+                  {...register('state')}
+                  placeholder="Область/регион"
+                  className={errors.state ? styles.inputError : ''}
+                />
+                {errors.state && <p className={styles.fieldError}>{errors.state.message}</p>}
+              </div>
+              <div>
+                <input
+                  {...register('postalCode')}
+                  placeholder="Почтовый индекс"
+                  className={errors.postalCode ? styles.inputError : ''}
+                />
+                {errors.postalCode && <p className={styles.fieldError}>{errors.postalCode.message}</p>}
+              </div>
+              <div>
+                <input
+                  {...register('country')}
+                  placeholder="Страна"
+                  className={errors.country ? styles.inputError : ''}
+                />
+                {errors.country && <p className={styles.fieldError}>{errors.country.message}</p>}
+              </div>
             </>
           )}
 
           <h2>Дополнительно</h2>
-          <input
-            type="text"
-            name="discountCode"
-            value={formData.discountCode}
-            onChange={handleInputChange}
-            placeholder="Код скидки"
-          />
-          <textarea
-            name="orderComment"
-            value={formData.orderComment}
-            onChange={handleInputChange}
-            placeholder="Комментарий к заказу"
-          />
+          <div>
+            <input
+              {...register('discountCode')}
+              placeholder="Код скидки"
+              className={errors.discountCode ? styles.inputError : ''}
+            />
+            {errors.discountCode && <p className={styles.fieldError}>{errors.discountCode.message}</p>}
+          </div>
+          <div>
+            <textarea
+              {...register('orderComment')}
+              placeholder="Комментарий к заказу"
+            />
+          </div>
 
           <button type="submit" disabled={loading || !(cartItems?.length)}>
             {loading ? 'Создание заказа...' : 'Оформить заказ'}
@@ -292,7 +343,7 @@ const CheckoutPage = () => {
               ))}
               <div className={styles.total}>
                 <p>Общая сумма: {totalAmount} ₽</p>
-                {formData.discountCode && (
+                {watch('discountCode') && (
                   <p>Скидка: (будет рассчитана после оформления)</p>
                 )}
               </div>

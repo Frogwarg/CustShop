@@ -86,7 +86,12 @@ namespace DevAPI.Services.Implementations
                 PaymentStatus = "Pending",
                 DeliveryMethod = request.DeliveryMethod,
                 OrderComment = request.OrderComment,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                FirstName = request.UserInfo.FirstName,
+                LastName = request.UserInfo.LastName,
+                MiddleName = request.UserInfo.MiddleName,
+                Email = request.UserInfo.Email,
+                PhoneNumber = request.UserInfo.PhoneNumber
             };
             _context.Orders.Add(order);
 
@@ -141,7 +146,7 @@ namespace DevAPI.Services.Implementations
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Design)
                 .Where(o => o.Id == orderId);
-
+            
             if (userId.HasValue)
             {
                 query = query.Where(o => o.UserId == userId);
@@ -189,7 +194,12 @@ namespace DevAPI.Services.Implementations
                     Quantity = oi.Quantity,
                     UnitPrice = oi.UnitPrice
                 }).ToList(),
-                CreatedAt = order.CreatedAt
+                CreatedAt = order.CreatedAt,
+                FirstName = order.FirstName,
+                LastName = order.LastName,
+                MiddleName = order.MiddleName,
+                Email = order.Email,
+                PhoneNumber = order.PhoneNumber
             };
         }
     }
