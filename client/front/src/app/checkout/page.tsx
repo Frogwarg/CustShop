@@ -176,12 +176,14 @@ const CheckoutPage = () => {
       };
 
       // const response = await axios.post<OrderResponse>('/api/order', orderData);
+      console.log("Order data: ", orderData);
       const response = await authService.axiosWithRefresh<OrderResponse>('post', '/order', orderData);
       router.push(`/order-confirmation?orderId=${response.id}`);
     } catch (err: unknown) {
         if (err instanceof AxiosError) {
             const axiosError = err as AxiosError<ErrorResponse>;
-            setError(axiosError.response?.data?.message || 'Ошибка при создании заказа');
+            console.log("Ошибка:", axiosError);
+            setError(axiosError.response?.data?.message || 'Ошибка Axios при создании заказа');
         } else {
             setError('Ошибка при создании заказа');
         }

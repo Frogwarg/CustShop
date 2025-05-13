@@ -1,12 +1,12 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import authService from "../services/authService";
 import { toast } from "sonner";
-
+import styles from "./Profile.module.css";
 interface UserData {
   firstName: string;
   lastName: string;
@@ -37,24 +37,27 @@ interface Order {
     designName: string;
     quantity: number;
     unitPrice: number;
+    previewUrl: string;
   }[];
 }
 
 const ProfilePage = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { logout } = useAuth();
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [designs, setDesigns] = useState<Array<{
     id: string;
     name: string;
     description: string;
-    createdAt: string;
     previewUrl: string;
+    productType: string;
+    createdAt: string;
   }>>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("info");
-  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const [newAddress, setNewAddress] = useState({
     street: "",
     city: "",
@@ -65,22 +68,14 @@ const ProfilePage = () => {
   });
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
-    }
-
     // Загрузка данных пользователя
     const fetchUserData = async () => {
       try {
         const response = await authService.axiosWithRefresh<UserData>('get', "/profile");
+        console.log("Профиль пользователя:", response);
         setUserData(response);
       } catch (error) {
         console.error("Ошибка загрузки профиля:", error);
-        if (error instanceof Error && error.message === "Токен истёк, требуется повторный вход") {
-          toast.error("Сессия истекла, пожалуйста, войдите снова");
-          router.push("/login");
-        }
       }
     };
 
@@ -91,16 +86,13 @@ const ProfilePage = () => {
             id: string;
             name: string;
             description: string;
-            createdAt: string;
             previewUrl: string;
+            productType: string;
+            createdAt: string;
         }>>('get', "/profile/designs");
         setDesigns(response);
       } catch (error) {
         console.error("Ошибка загрузки дизайнов:", error);
-        if (error instanceof Error && error.message === "Токен истёк, требуется повторный вход") {
-          toast.error("Сессия истекла, пожалуйста, войдите снова");
-          router.push("/login");
-        }
       }
     };
 
@@ -118,7 +110,7 @@ const ProfilePage = () => {
     // Загрузка истории заказов
     const fetchOrders = async () => {
       try {
-        const response = await authService.axiosWithRefresh<Order[]>('get', "/orders");
+        const response = await authService.axiosWithRefresh<Order[]>('get', "/profile/orders");
         setOrders(response);
       } catch (error) {
         console.error("Ошибка загрузки заказов:", error);
@@ -130,7 +122,8 @@ const ProfilePage = () => {
     fetchDesigns();
     fetchAddresses();
     fetchOrders();
-  }, [isAuthenticated, router]);
+    //// eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -151,10 +144,9 @@ const ProfilePage = () => {
     e.preventDefault();
     try {
       const response = await authService.axiosWithRefresh<Address>('post', "/profile/addresses", JSON.stringify(newAddress));
-      const savedAddress = await response;
-      setAddresses([...addresses, savedAddress]);
+      setAddresses([...addresses, response]);
       setNewAddress({ street: "", city: "", state: "", postalCode: "", country: "", label: "" });
-      setShowAddressForm(false);
+      setShowAddressModal(false);
       toast.success("Адрес добавлен!");
     } catch (error) {
       console.error("Ошибка добавления адреса:", error);
@@ -162,45 +154,60 @@ const ProfilePage = () => {
     }
   };
 
-  const handleDeleteDesign = async (designId: string) => {
+  const handleDeleteAddress = async (addressId: string) => {
     try {
-      await authService.axiosWithRefresh('delete', `/profile/designs/${designId}`);
-      setDesigns(designs.filter((design) => design.id !== designId));
-      toast.success("Дизайн удален!");
+      await authService.axiosWithRefresh('delete', `/profile/addresses/${addressId}`);
+      setAddresses(addresses.filter((address) => address.id !== addressId));
+      toast.success("Адрес удален!");
     } catch (error) {
-      console.error("Ошибка удаления дизайна:", error);
-      toast.error("Ошибка удаления дизайна");
+      console.error("Ошибка удаления адреса:", error);
+      toast.error("Ошибка удаления адреса");
     }
   };
 
-  if (!userData) return <div>Загрузка...</div>;
+  // const handleDeleteDesign = async (designId: string) => {
+  //   try {
+  //     await authService.axiosWithRefresh('delete', `/profile/designs/${designId}`);
+  //     setDesigns(designs.filter((design) => design.id !== designId));
+  //     toast.success("Дизайн удален!");
+  //   } catch (error) {
+  //     console.error("Ошибка удаления дизайна:", error);
+  //     toast.error("Ошибка удаления дизайна");
+  //   }
+  // };
+
+  const toggleOrderDetails = (orderId: string) => {
+    setExpandedOrder(expandedOrder === orderId ? null : orderId);
+  };
+
+  if (!userData) return <div className={styles.container}>Загрузка...</div>;
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Профиль пользователя</h1>
+    <div className={styles.container}>
+      <h1 className={styles.title}>Профиль пользователя</h1>
 
       {/* Вкладки */}
-      <div className="tabs mb-4 flex space-x-2">
+      <div className={styles.tabs}>
         <button
-          className={`px-4 py-2 ${activeTab === "info" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+          className={`${styles.tabButton} ${activeTab === "info" ? styles.active : ""}`}
           onClick={() => setActiveTab("info")}
         >
           Мой профиль
         </button>
         <button
-          className={`px-4 py-2 ${activeTab === "addresses" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+          className={`${styles.tabButton} ${activeTab === "addresses" ? styles.active : ""}`}
           onClick={() => setActiveTab("addresses")}
         >
           Мои адреса
         </button>
         <button
-          className={`px-4 py-2 ${activeTab === "orders" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+          className={`${styles.tabButton} ${activeTab === "orders" ? styles.active : ""}`}
           onClick={() => setActiveTab("orders")}
         >
           История заказов
         </button>
         <button
-          className={`px-4 py-2 ${activeTab === "designs" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+          className={`${styles.tabButton} ${activeTab === "designs" ? styles.active : ""}`}
           onClick={() => setActiveTab("designs")}
         >
           История дизайнов
@@ -210,152 +217,196 @@ const ProfilePage = () => {
       {/* Мой профиль */}
       {activeTab === "info" && (
         <div>
-            <form onSubmit={handleUpdateProfile} className="space-y-4">
-                <div>
-                    <label className="block">Email:</label>
-                    <input
-                    type="email"
-                    value={userData.email || ""}
-                    className="border p-2 w-full bg-gray-100"
-                    disabled
-                    />
-                </div>
-                <div>
-                    <label className="block">Имя:</label>
-                    <input
-                    type="text"
-                    value={userData.firstName || ""}
-                    onChange={(e) => setUserData({ ...userData, firstName: e.target.value })}
-                    className="border p-2 w-full"
-                    />
-                </div>
-                <div>
-                    <label className="block">Фамилия:</label>
-                    <input
-                    type="text"
-                    value={userData.lastName || ""}
-                    onChange={(e) => setUserData({ ...userData, lastName: e.target.value })}
-                    className="border p-2 w-full"
-                    />
-                </div>
-                <div>
-                    <label className="block">Телефон:</label>
-                    <input
-                    type="text"
-                    value={userData.phoneNumber || ""}
-                    onChange={(e) => setUserData({ ...userData, phoneNumber: e.target.value })}
-                    className="border p-2 w-full"
-                    />
-                </div>
-                <div>
-                    <label className="block">Био:</label>
-                    <input
-                    type="text"
-                    value={userData.bio || ""}
-                    onChange={(e) => setUserData({ ...userData, bio: e.target.value })}
-                    className="border p-2 w-full"
-                    />
-                </div>
-                <div>
-                    <label className="block">Адреса доставки:</label>
-                    <Link href="#" onClick={() => setActiveTab("addresses")} className="text-blue-500">
-                    Перейти к адресам
-                    </Link>
-                </div>
-                <button type="submit" className="bg-green-500 text-white px-4 py-2">
-                    Сохранить
-                </button>
-            </form>
+          <form onSubmit={handleUpdateProfile} className={styles.form}>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Email:</label>
+              <input
+                type="email"
+                value={userData.email || ""}
+                className={styles.input}
+                disabled
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Имя:</label>
+              <input
+                type="text"
+                value={userData.firstName || ""}
+                onChange={(e) => setUserData({ ...userData, firstName: e.target.value })}
+                className={styles.input}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Фамилия:</label>
+              <input
+                type="text"
+                value={userData.lastName || ""}
+                onChange={(e) => setUserData({ ...userData, lastName: e.target.value })}
+                className={styles.input}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Телефон:</label>
+              <input
+                type="text"
+                value={userData.phoneNumber || ""}
+                onChange={(e) => setUserData({ ...userData, phoneNumber: e.target.value })}
+                className={styles.input}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Био:</label>
+              <input
+                type="text"
+                value={userData.bio || ""}
+                onChange={(e) => setUserData({ ...userData, bio: e.target.value })}
+                className={styles.input}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Адреса доставки:</label>
+              <Link href="#" onClick={() => setActiveTab("addresses")} className={styles.link}>
+                Перейти к адресам
+              </Link>
+            </div>
+            <button type="submit" className={`${styles.button} ${styles.green}`}>
+              Сохранить
+            </button>
+          </form>
         </div>
       )}
 
       {/* Мои адреса */}
       {activeTab === "addresses" && (
         <div>
-          <h2 className="text-xl font-semibold mb-2">Мои адреса</h2>
-          <button
-            onClick={() => setShowAddressForm(!showAddressForm)}
-            className="mb-4 bg-blue-500 text-white px-4 py-2"
-          >
-            {showAddressForm ? "Отмена" : "Добавить адрес"}
-          </button>
-          {showAddressForm && (
-            <form onSubmit={handleAddAddress} className="space-y-4 mb-4">
-              <div>
-                <label className="block">Улица:</label>
-                <input
-                  type="text"
-                  value={newAddress.street}
-                  onChange={(e) => setNewAddress({ ...newAddress, street: e.target.value })}
-                  className="border p-2 w-full"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block">Город:</label>
-                <input
-                  type="text"
-                  value={newAddress.city}
-                  onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                  className="border p-2 w-full"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block">Область/регион:</label>
-                <input
-                  type="text"
-                  value={newAddress.state}
-                  onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
-                  className="border p-2 w-full"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block">Почтовый индекс:</label>
-                <input
-                  type="text"
-                  value={newAddress.postalCode}
-                  onChange={(e) => setNewAddress({ ...newAddress, postalCode: e.target.value })}
-                  className="border p-2 w-full"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block">Страна:</label>
-                <input
-                  type="text"
-                  value={newAddress.country}
-                  onChange={(e) => setNewAddress({ ...newAddress, country: e.target.value })}
-                  className="border p-2 w-full"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block">Метка (опционально):</label>
-                <input
-                  type="text"
-                  value={newAddress.label}
-                  onChange={(e) => setNewAddress({ ...newAddress, label: e.target.value })}
-                  className="border p-2 w-full"
-                />
-              </div>
-              <button type="submit" className="bg-green-500 text-white px-4 py-2">
-                Сохранить адрес
-              </button>
-            </form>
-          )}
+          <h2 className={styles.title}>Мои адреса</h2>
           {addresses.length === 0 ? (
-            <p>Адресов пока нет.</p>
+            <p className={styles.noData}>Адресов пока нет.</p>
           ) : (
-            <ul className="space-y-2">
-              {addresses.map((address) => (
-                <li key={address.id} className="border p-2">
-                  <p><strong>Метка:</strong> {address.label || "Без метки"}</p>
-                  <p><strong>Адрес:</strong> {address.street}, {address.city}, {address.state}, {address.postalCode}, {address.country}</p>
-                </li>
-              ))}
-            </ul>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Метка</th>
+                  <th>Улица</th>
+                  <th>Город</th>
+                  <th>Область</th>
+                  <th>Почтовый индекс</th>
+                  <th>Страна</th>
+                  <th>Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {addresses.map((address) => (
+                  <tr key={address.id}>
+                    <td>{address.label || "Без метки"}</td>
+                    <td>{address.street}</td>
+                    <td>{address.city}</td>
+                    <td>{address.state}</td>
+                    <td>{address.postalCode}</td>
+                    <td>{address.country}</td>
+                    <td>
+                      <button
+                        onClick={() => handleDeleteAddress(address.id)}
+                        className={styles.tableActionButton}
+                      >
+                        Удалить
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <button
+            onClick={() => setShowAddressModal(true)}
+            className={`${styles.button} ${styles.blue}`}
+          >
+            Добавить адрес
+          </button>
+
+          {/* Модальное окно для добавления адреса */}
+          {showAddressModal && (
+            <div className={styles.modalOverlay}>
+              <div className={styles.modal}>
+                <h3 className={styles.modalTitle}>Добавить новый адрес</h3>
+                <form onSubmit={handleAddAddress} className={styles.modalForm}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>Улица:</label>
+                    <input
+                      type="text"
+                      value={newAddress.street}
+                      onChange={(e) => setNewAddress({ ...newAddress, street: e.target.value })}
+                      className={styles.input}
+                      required
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>Город:</label>
+                    <input
+                      type="text"
+                      value={newAddress.city}
+                      onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
+                      className={styles.input}
+                      required
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>Область/регион:</label>
+                    <input
+                      type="text"
+                      value={newAddress.state}
+                      onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
+                      className={styles.input}
+                      required
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>Почтовый индекс:</label>
+                    <input
+                      type="text"
+                      value={newAddress.postalCode}
+                      onChange={(e) => setNewAddress({ ...newAddress, postalCode: e.target.value })}
+                      className={styles.input}
+                      required
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>Страна:</label>
+                    <input
+                      type="text"
+                      value={newAddress.country}
+                      onChange={(e) => setNewAddress({ ...newAddress, country: e.target.value })}
+                      className={styles.input}
+                      required
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>Метка (опционально):</label>
+                    <input
+                      type="text"
+                      value={newAddress.label}
+                      onChange={(e) => setNewAddress({ ...newAddress, label: e.target.value })}
+                      className={styles.input}
+                    />
+                  </div>
+                  <div className={styles.modalButtons}>
+                    <button
+                      type="submit"
+                      className={`${styles.button} ${styles.green}`}
+                    >
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddressModal(false)}
+                      className={`${styles.button} ${styles.gray}`}
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -363,30 +414,64 @@ const ProfilePage = () => {
       {/* История заказов */}
       {activeTab === "orders" && (
         <div>
-          <h2 className="text-xl font-semibold mb-2">История заказов</h2>
+          <h2 className={styles.title}>История заказов</h2>
           {orders.length === 0 ? (
-            <p>Заказов пока нет.</p>
+            <p className={styles.noData}>Заказов пока нет.</p>
           ) : (
-            <ul className="space-y-2">
-              {orders.map((order) => (
-                <li key={order.id} className="border p-2">
-                  <p><strong>Заказ №:</strong> {order.id}</p>
-                  <p><strong>Дата:</strong> {new Date(order.createdAt).toLocaleString()}</p>
-                  <p><strong>Сумма:</strong> {order.totalAmount} ₽</p>
-                  <p><strong>Статус:</strong> {order.status}</p>
-                  <p><strong>Оплата:</strong> {order.paymentStatus}</p>
-                  <p><strong>Доставка:</strong> {order.deliveryMethod}</p>
-                  <h3 className="font-semibold mt-2">Товары:</h3>
-                  <ul className="ml-4">
-                    {order.orderItems.map((item, index) => (
-                      <li key={index}>
-                        {item.designName} - {item.quantity} шт. x {item.unitPrice} ₽
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
-            </ul>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Заказ №</th>
+                  <th>Дата</th>
+                  <th>Сумма</th>
+                  <th>Статус</th>
+                  <th>Оплата</th>
+                  <th>Доставка</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order) => (
+                  <React.Fragment key={order.id}>
+                    <tr
+                      className={styles.orderRow}
+                      onClick={() => toggleOrderDetails(order.id)}
+                    >
+                      <td>{order.id}</td>
+                      <td>{new Date(order.createdAt).toLocaleString()}</td>
+                      <td>{order.totalAmount} ₽</td>
+                      <td>{order.status}</td>
+                      <td>{order.paymentStatus}</td>
+                      <td>{order.deliveryMethod}</td>
+                    </tr>
+                    {expandedOrder === order.id && (
+                      <tr>
+                        <td colSpan={6} className={styles.orderDetails}>
+                          <h3 className={styles.label}>Товары:</h3>
+                          <div className={styles.form}>
+                            {order.orderItems.map((item, index) => (
+                              <div key={index} className={styles.orderItem}>
+                                <Image
+                                  src={item.previewUrl}
+                                  alt={item.designName}
+                                  width={80}
+                                  height={80}
+                                  className={styles.orderItemImage}
+                                />
+                                <div>
+                                  <p><strong>Дизайн:</strong> {item.designName}</p>
+                                  <p><strong>Количество:</strong> {item.quantity} шт.</p>
+                                  <p><strong>Цена за единицу:</strong> {item.unitPrice} ₽</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       )}
@@ -394,37 +479,38 @@ const ProfilePage = () => {
       {/* История дизайнов */}
       {activeTab === "designs" && (
         <div>
-          <h2 className="text-xl font-semibold mb-2">История дизайнов</h2>
+          <h2 className={styles.title}>История дизайнов</h2>
           {designs.length === 0 ? (
-            <p>Дизайнов пока нет.</p>
+            <p className={styles.noData}>Дизайнов пока нет.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className={styles.form}>
               {designs.map((design) => (
-                <li key={design.id} className="border p-2 flex items-start space-x-4">
+                <li key={design.id} className={styles.table} style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                   <Image
                     src={design.previewUrl}
                     alt={design.name}
                     width={100}
                     height={100}
-                    className="object-cover"
+                    style={{ objectFit: 'cover' }}
                   />
-                  <div className="flex-1">
+                  <div style={{ flex: 1 }}>
                     <p><strong>Название:</strong> {design.name}</p>
                     <p><strong>Описание:</strong> {design.description}</p>
-                    <p><strong>Дата создания:</strong> {new Date(design.createdAt).toLocaleString()}</p>
-                    <div className="mt-2 space-x-2">
+                    <p><strong>Тип продукта:</strong> {design.productType}</p>
+                    <p><strong>Дата создания:</strong> {new Date(design.createdAt).toLocaleString('ru-RU')}</p>
+                    <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
                       <Link
                         href={`/constructor?designId=${design.id}`}
-                        className="text-blue-500 hover:underline"
+                        className={styles.link}
                       >
                         Редактировать
                       </Link>
-                      <button
+                      {/* <button
                         onClick={() => handleDeleteDesign(design.id)}
-                        className="text-red-500 hover:underline"
+                        className={styles.tableActionButton}
                       >
                         Удалить
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 </li>
@@ -434,7 +520,7 @@ const ProfilePage = () => {
         </div>
       )}
 
-      <button onClick={logout} className="mt-4 bg-red-500 text-white px-4 py-2">
+      <button onClick={logout} className={`${styles.button} ${styles.red}`}>
         Выйти
       </button>
     </div>

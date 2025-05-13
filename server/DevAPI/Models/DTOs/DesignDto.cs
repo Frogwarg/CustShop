@@ -12,6 +12,7 @@ namespace DevAPI.Models.DTOs
         public string PreviewUrl { get; set; }
         public string DesignData { get; set; }
         public string DesignHash { get; set; }
+        public DateTime CreatedAt { get; set; }
         public string ProductType { get; set; } = "shirt";
         public string DesignType { get; set; } = "Custom"; // Добавляем дефолтное значение
     }

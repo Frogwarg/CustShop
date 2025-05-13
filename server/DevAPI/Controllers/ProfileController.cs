@@ -6,6 +6,7 @@ using DevAPI.Models.Entities;
 using DevAPI.Data;
 using DevAPI.Services.Interfaces;
 using System.Security.Claims;
+using DevAPI.Exceptions;
 
 namespace DevAPI.Controllers
 {
@@ -47,25 +48,6 @@ namespace DevAPI.Controllers
             return Ok(new { message = "Профиль обновлен" });
         }
 
-        [HttpPost("designs")]
-        public async Task<ActionResult<DesignDto>> SaveDesign([FromBody] SaveDesignRequest request)
-        {
-            try
-            {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized();
-
-                var design = await _profileService.SaveDesignAsync(Guid.Parse(userId), request);
-                return Ok(design);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при сохранении дизайна");
-                return StatusCode(500, new { message = "Ошибка сервера" });
-            }
-        }
-
         [HttpGet("designs")]
         public async Task<ActionResult<List<DesignDto>>> GetUserDesigns()
         {
@@ -78,97 +60,53 @@ namespace DevAPI.Controllers
         }
 
         [HttpGet("addresses")]
-        public async Task<ActionResult<List<SavedAddress>>> GetUserAddresses()
+        public async Task<ActionResult<List<AddressDto>>> GetUserAddresses()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
 
-            var addresses = await _context.SavedAddresses
-                .Where(sa => sa.UserId == Guid.Parse(userId))
-                .Include(sa => sa.Address)
-                .Select(sa => new
-                {
-                    id = sa.Id.ToString(),
-                    street = sa.Address.Street,
-                    city = sa.Address.City,
-                    state = sa.Address.State,
-                    postalCode = sa.Address.PostalCode,
-                    country = sa.Address.Country,
-                    label = sa.Label
-                })
-                .ToListAsync();
-
+            var addresses = await _profileService.GetUserAddressesAsync(Guid.Parse(userId));
             return Ok(addresses);
         }
 
         [HttpPost("addresses")]
-        public async Task<ActionResult<SavedAddress>> AddAddress([FromBody] AddressRequest request)
+        public async Task<ActionResult<AddressDto>> AddAddress([FromBody] AddressRequest request)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
 
-            var address = new Address
-            {
-                Id = Guid.NewGuid(),
-                Street = request.Street,
-                City = request.City,
-                State = request.State,
-                PostalCode = request.PostalCode,
-                Country = request.Country
-            };
-
-            var savedAddress = new SavedAddress
-            {
-                Id = Guid.NewGuid(),
-                UserId = Guid.Parse(userId),
-                AddressId = address.Id,
-                Label = request.Label,
-                Address = address
-            };
-
-            _context.Addresses.Add(address);
-            _context.SavedAddresses.Add(savedAddress);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                id = savedAddress.Id.ToString(),
-                street = address.Street,
-                city = address.City,
-                state = address.State,
-                postalCode = address.PostalCode,
-                country = address.Country,
-                label = savedAddress.Label
-            });
+            var address = await _profileService.AddUserAddressAsync(Guid.Parse(userId), request);
+            return Ok(address);
         }
 
-        [HttpDelete("designs/{designId}")]
-        public async Task<IActionResult> DeleteDesign(string designId)
+        [HttpDelete("addresses/{addressId}")]
+        public async Task<IActionResult> DeleteAddress(string addressId)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
 
-            var design = await _context.Designs
-                .FirstOrDefaultAsync(d => d.Id == Guid.Parse(designId) && d.UserId == Guid.Parse(userId));
-            if (design == null)
-                return NotFound(new { message = "Дизайн не найден" });
-
-            _context.Designs.Remove(design);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Дизайн удален" });
+            try
+            {
+                await _profileService.DeleteUserAddressAsync(Guid.Parse(userId), addressId);
+                return Ok(new { message = "Адрес удален" });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
-    }
-    public class AddressRequest
-    {
-        public string Street { get; set; }
-        public string City { get; set; }
-        public string State { get; set; }
-        public string PostalCode { get; set; }
-        public string Country { get; set; }
-        public string Label { get; set; }
+        [HttpGet("orders")]
+        public async Task<ActionResult<List<OrderDto>>> GetUserOrders()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            var orders = await _profileService.GetUserOrdersAsync(Guid.Parse(userId));
+            return Ok(orders);
+        }
     }
 }
