@@ -12,7 +12,6 @@ namespace DevAPI.Configurations
 
             builder.Property(up => up.AvatarUrl).HasMaxLength(500);
             builder.Property(up => up.Bio).HasMaxLength(1000);
-            builder.Property(up => up.Preferences).HasColumnType("json");
 
             builder.HasOne(up => up.User)
                 .WithOne(u => u.UserProfile)

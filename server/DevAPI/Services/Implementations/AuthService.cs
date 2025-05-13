@@ -58,7 +58,15 @@ namespace DevAPI.Services.Implementations
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
             await _userManager.UpdateAsync(user);
 
-            var sessionId = _httpContextAccessor.HttpContext?.Request.Cookies["cart_session_id"];
+            var userProfile = await _context.Set<UserProfile>()
+                .FirstOrDefaultAsync(up => up.UserId == user.Id);
+            if (userProfile != null)
+            {
+                userProfile.LastLogin = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
+
+                var sessionId = _httpContextAccessor.HttpContext?.Request.Cookies["cart_session_id"];
             if (!string.IsNullOrEmpty(sessionId))
             {
                 await _cartService.MergeAnonymousCart(user.Id, sessionId);
@@ -121,11 +129,11 @@ namespace DevAPI.Services.Implementations
             if (user == null) throw new UnauthorizedException("Недействительный или истёкший refresh token");
 
             var roles = await _userManager.GetRolesAsync(user);
-            var newToken = _tokenService.GenerateJwtToken(user, roles); // Ваш метод генерации JWT
-            var newRefreshToken =_tokenService.GenerateRefreshToken(); // Ваш метод генерации refresh token
+            var newToken = _tokenService.GenerateJwtToken(user, roles);
+            var newRefreshToken =_tokenService.GenerateRefreshToken();
 
             user.RefreshToken = newRefreshToken;
-            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7); // Пример срока действия
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
             await _userManager.UpdateAsync(user);
 
             return new AuthResponse

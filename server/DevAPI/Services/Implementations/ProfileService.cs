@@ -23,6 +23,8 @@ namespace DevAPI.Services
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null) throw new UnauthorizedException();
+            var userProfile = await _context.Set<UserProfile>()
+                .FirstOrDefaultAsync(up => up.UserId == userId);
 
             return new UserProfileDto
             {
@@ -30,8 +32,8 @@ namespace DevAPI.Services
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 PhoneNumber = user.PhoneNumber,
-                AvatarUrl = user.UserProfile?.AvatarUrl,
-                Bio = user.UserProfile?.Bio
+                AvatarUrl = userProfile?.AvatarUrl,
+                Bio = userProfile?.Bio
             };
         }
 

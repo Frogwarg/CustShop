@@ -109,28 +109,8 @@ namespace DevAPI.Services.Implementations
                 _context.OrderItems.Add(orderItem);
             }
 
-            // Обновляем данные пользователя, если авторизован
-            //if (userId.HasValue)
-            //{
-            //    var user = await _context.Users.FindAsync(userId);
-            //    if (user != null)
-            //    {
-            //        user.FirstName = request.UserInfo.FirstName;
-            //        user.LastName = request.UserInfo.LastName;
-            //        user.PhoneNumber = request.UserInfo.PhoneNumber;
-            //        user.Email = request.UserInfo.Email;
-            //    }
-            //}
-
             // Очищаем корзину
             _context.CartItems.RemoveRange(cartItems);
-            //foreach (var cartItem in cartItems)
-            //{
-            //    if (!await _context.CartItems.AnyAsync(c => c.DesignId == cartItem.DesignId && c.Id != cartItem.Id))
-            //    {
-            //        _context.Designs.Remove(cartItem.Design);
-            //    }
-            //}
 
             await _context.SaveChangesAsync();
 
