@@ -1,7 +1,10 @@
-﻿using DevAPI.Models.DTOs;
+﻿using DevAPI.Data;
+using DevAPI.Models.DTOs;
+using DevAPI.Models.Entities;
 using DevAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 
 namespace DevAPI.Controllers
@@ -13,11 +16,13 @@ namespace DevAPI.Controllers
     {
         private readonly IAdminService _adminService;
         private readonly ILogger<AdminController> _logger;
+        private readonly StoreDbContext _context;
 
-        public AdminController(IAdminService adminService, ILogger<AdminController> logger)
+        public AdminController(IAdminService adminService, ILogger<AdminController> logger, StoreDbContext context)
         {
             _adminService = adminService;
             _logger = logger;
+            _context = context;
         }
 
         [HttpGet("users")]
@@ -53,6 +58,49 @@ namespace DevAPI.Controllers
         {
             await _adminService.UpdateOrderStatusAsync(id, request.Status, request.AdminComment);
             return Ok(new { message = "Статус заказа обновлен" });
+        }
+        [HttpGet("tags")]
+        public async Task<ActionResult<List<TagDto>>> GetTags()
+        {
+            var tags = await _context.Tags
+                .Select(t => new TagDto { Id = t.Id, Name = t.Name })
+                .ToListAsync();
+            return Ok(tags);
+        }
+
+        [HttpPost("tags")]
+        public async Task<IActionResult> CreateTag([FromBody] CreateTagRequest request)
+        {
+            var tag = new Tag { Id = Guid.NewGuid(), Name = request.Name };
+            _context.Tags.Add(tag);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Тег создан", tagId = tag.Id });
+        }
+
+        [HttpPut("tags/{id}")]
+        public async Task<IActionResult> UpdateTag(Guid id, [FromBody] UpdateTagRequest request)
+        {
+            var tag = await _context.Tags.FindAsync(id);
+            if (tag == null)
+            {
+                return NotFound("Тег не найден");
+            }
+            tag.Name = request.Name;
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Тег обновлён" });
+        }
+
+        [HttpDelete("tags/{id}")]
+        public async Task<IActionResult> DeleteTag(Guid id)
+        {
+            var tag = await _context.Tags.FindAsync(id);
+            if (tag == null)
+            {
+                return NotFound("Тег не найден");
+            }
+            _context.Tags.Remove(tag);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Тег удалён" });
         }
     }
 }

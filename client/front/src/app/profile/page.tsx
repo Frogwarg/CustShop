@@ -42,7 +42,7 @@ interface Order {
 }
 
 const ProfilePage = () => {
-  const { logout } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [designs, setDesigns] = useState<Array<{
@@ -68,6 +68,10 @@ const ProfilePage = () => {
   });
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
     // Загрузка данных пользователя
     const fetchUserData = async () => {
       try {
@@ -122,7 +126,7 @@ const ProfilePage = () => {
     fetchDesigns();
     fetchAddresses();
     fetchOrders();
-    //// eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {

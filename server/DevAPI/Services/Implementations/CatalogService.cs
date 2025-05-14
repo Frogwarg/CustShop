@@ -37,11 +37,26 @@ namespace DevAPI.Services.Implementations
                 Name = request.Name,
                 Description = request.Description,
                 Price = request.Price,
-                Tags = request.Tags,
                 AuthorId = design.UserId.Value,
                 AddedToCatalogAt = DateTime.UtcNow,
                 DiscountedPrice = null
             };
+
+            if (request.TagIds != null && request.TagIds.Any())
+            {
+                foreach (var tagId in request.TagIds)
+                {
+                    var tag = await _context.Tags.FindAsync(tagId);
+                    if (tag != null)
+                    {
+                        catalogItem.CatalogItemTags.Add(new CatalogItemTag
+                        {
+                            CatalogItemId = catalogItem.Id,
+                            TagId = tagId
+                        });
+                    }
+                }
+            }
 
             _context.CatalogItems.Add(catalogItem);
             await _context.SaveChangesAsync();
@@ -55,6 +70,8 @@ namespace DevAPI.Services.Implementations
             var query = _context.CatalogItems
                 .Include(c => c.Design)
                 .ThenInclude(d => d.DesignType)
+                .Include(c => c.CatalogItemTags)
+                .ThenInclude(cit => cit.Tag)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(tags))
@@ -62,7 +79,7 @@ namespace DevAPI.Services.Implementations
                 var tagList = tags.Split(',', StringSplitOptions.RemoveEmptyEntries)
                     .Select(t => t.Trim().ToLower())
                     .ToList();
-                query = query.Where(c => tagList.Any(t => c.Tags.ToLower().Contains(t)));
+                query = query.Where(c => c.CatalogItemTags.Any(cit => tagList.Contains(cit.Tag.Name.ToLower())));
             }
 
             if (!string.IsNullOrEmpty(productType))
@@ -84,10 +101,10 @@ namespace DevAPI.Services.Implementations
                     Name = c.Name,
                     Description = c.Design.Description,
                     Price = c.Price,
-                    Tags = c.Tags,
                     PreviewUrl = c.Design.PreviewUrl,
                     DiscountedPrice = c.DiscountedPrice,
-                    ProductType = c.Design.ProductType
+                    ProductType = c.Design.ProductType,
+                    Tags = c.CatalogItemTags.Select(cit => cit.Tag.Name).ToList()
                 })
                 .ToListAsync();
 
@@ -108,6 +125,8 @@ namespace DevAPI.Services.Implementations
                 .Include(c => c.Design)
                 .ThenInclude(d => d.DesignType)
                 .Include(c => c.Author)
+                .Include(c => c.CatalogItemTags)
+                .ThenInclude(cit => cit.Tag)
                 .FirstOrDefaultAsync(c => c.Id == catalogItemId);
 
             if (item == null)
@@ -126,14 +145,14 @@ namespace DevAPI.Services.Implementations
                 Description = item.Description,
                 Price = item.Price,
                 DiscountedPrice = item.DiscountedPrice,
-                Tags = item.Tags,
                 PreviewUrl = item.Design.PreviewUrl,
                 ProductType = item.Design.ProductType,
                 DesignData = item.Design.DesignData,
                 AuthorName = item.Author?.UserName ?? "Unknown",
                 Sizes = productDetails.Sizes,
                 Materials = productDetails.Materials,
-                AdditionalInfo = productDetails.AdditionalInfo
+                AdditionalInfo = productDetails.AdditionalInfo,
+                Tags = item.CatalogItemTags.Select(cit => cit.Tag.Name).ToList()
             };
         }
 

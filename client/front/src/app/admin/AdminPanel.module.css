@@ -1,0 +1,46 @@
+.container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #1f2937;
+}
+
+.tabContainer {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tabButton {
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background-color: #f3f4f6;
+  color: #374151;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.tabButton:hover {
+  background-color: #e5e7eb;
+}
+
+.activeTab {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.tabContent {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 16px;
+  background-color: white;
+}

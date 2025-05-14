@@ -15,9 +15,11 @@ namespace DevAPI.Data
         public DbSet<Design> Designs { get; set; }
         public DbSet<DesignHistory> DesignHistories { get; set; }
         public DbSet<CatalogItem> CatalogItems { get; set; }
+        public DbSet<CatalogItemTag> CatalogItemTags { get; set; }
         public DbSet<DesignType> DesignTypes { get; set; }
         public DbSet<Discount> Discounts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
+        public DbSet<Tag> Tags { get; set; }
         public DbSet<Address> Addresses { get; set; }
         public DbSet<SavedAddress> SavedAddresses { get; set; }
         public DbSet<Order> Orders { get; set; }
@@ -47,6 +49,8 @@ namespace DevAPI.Data
             modelBuilder.ApplyConfiguration(new Configurations.OrderItemConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.CatalogItemConfiguration());
             modelBuilder.ApplyConfiguration(new Configurations.AdminActionLogConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.CatalogItemTagConfiguration());
+            modelBuilder.ApplyConfiguration(new Configurations.TagConfiguration());
         }
     }
 }

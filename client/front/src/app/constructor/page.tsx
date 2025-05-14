@@ -17,16 +17,24 @@ import {products} from './ProductModal/productModal';
 import ProductModal from './ProductModal/productModal';
 import TabbedControls from './tabbedControl';
 import LayersPanel from './Layers/LayersPanel';
+import CatalogAddModal from './CatalogAddModal/CatalogAddModal';
 
 const DesignProduct = () => {
     const searchParams = useSearchParams();
     const designId = searchParams.get('designId');
 
     const { isAuthenticated, hasRole } = useAuth();
+    const [canShowCatalogButton, setCanShowCatalogButton] = useState(false);
+
+    useEffect(() => {
+        setCanShowCatalogButton(hasRole('Moderator') || hasRole('Admin'));
+    }, [hasRole]);
+    
     const [designAuthorId, setDesignAuthorId] = useState<string | null>(null);
 
     const [selectedProduct, setSelectedProduct] = useState<{id: string; type: string}>({id:"shirt", type:"3D"});
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+    const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
     const [selectedObject, setSelectedObject] = useState<fabric.Object | null>(null);
     const [currentText, setCurrentText] = useState('Your Text Here');
     const [backgroundColor, setBackgroundColor] = useState('#FFFFFF');
@@ -733,7 +741,6 @@ const DesignProduct = () => {
             });
 
             // Подготавливаем данные дизайна
-            console.log('selectedProduct: ',selectedProduct);
             const designData = {
                 canvasSize,
                 prodType: selectedProduct,
@@ -781,7 +788,7 @@ const DesignProduct = () => {
                     id: designId || generateGuid(),
                     name: `Дизайн ${new Date().toLocaleString()}`,
                     description: "Пользовательский дизайн",
-                    previewUrl: imageUrl, // Используем полученный URL вместо base64
+                    previewUrl: imageUrl,
                     designData: JSON.stringify(designData),
                     designHash: designHash,
                     productType: selectedProduct?.id,
@@ -892,6 +899,74 @@ const DesignProduct = () => {
             selectedObject.canvas?.renderAll();
         }
     }
+    async function handleAddToCatalog(data: {name: string; description: string; price: number; tagIds: string[]; moderationStatus: "Approved" | "Rejected";}) {
+        if (!canvasRef.current) return;
+
+        try {
+        // Получаем превью дизайна
+        const overlayImage = canvasRef.current.overlayImage;
+        const previewDataURL = canvasRef.current.toDataURL({
+            format: 'png',
+            quality: 1.0,
+            top: overlayImage ? overlayImage.top : 0,
+            left: overlayImage ? overlayImage.left : 0,
+            width: overlayImage ? overlayImage.width : canvasRef.current.width,
+            height: overlayImage ? overlayImage.height : canvasRef.current.height,
+        });
+
+        // Загружаем превью в ImgBB
+        const { imageUrl } = await authService.axiosWithRefresh<{ imageUrl: string }>(
+            'post',
+            '/upload/design-preview',
+            { imageData: previewDataURL }
+        );
+
+        // Подготавливаем данные дизайна
+        const designData = {
+            canvasSize,
+            prodType: selectedProduct,
+            layers: layers.map((layer) => ({
+            ...layer,
+            url: layer.type === 'image' ? layer.url : undefined,
+            })),
+        };
+
+        const designHash = CryptoJS.SHA256(JSON.stringify(designData)).toString();
+
+        const designRequest = {
+            id: designId || generateGuid(),
+            name: data.name,
+            description: data.description,
+            previewUrl: imageUrl,
+            designData: JSON.stringify(designData),
+            designHash,
+            productType: selectedProduct?.id,
+            moderationStatus: data.moderationStatus,
+            price: data.price,
+            tagIds: data.tagIds,
+        };
+
+        // Отправляем дизайн напрямую в каталог
+        await authService.axiosWithRefresh(
+            'post',
+            '/moderation/direct-catalog-add',
+            JSON.stringify(designRequest)
+        );
+
+        toast.success(
+            data.moderationStatus === 'Approved'
+            ? 'Дизайн добавлен в каталог'
+            : 'Дизайн отклонён'
+        );
+        } catch (error: unknown) {
+            console.error('Ошибка:', error);
+            if (error instanceof Error) {
+                toast.error(`Ошибка: ${error.message}`);
+            } else {
+                toast.error('Ошибка: Неизвестная ошибка');
+            }
+        }
+    }
     return (
         <div style={{ display: 'flex', justifyContent:'space-between' }}>
         
@@ -944,6 +1019,12 @@ const DesignProduct = () => {
                         Новый дизайн
                     </button>
                 )}
+                {canShowCatalogButton ? (
+                    <button onClick={() => setIsCatalogModalOpen(true)}>
+                    Добавить в каталог
+                    </button>
+                ) : null}
+                <CatalogAddModal isOpen={isCatalogModalOpen} onClose={() => setIsCatalogModalOpen(false)} onSubmit={handleAddToCatalog}/>
                 <TabbedControls  selectedObject={selectedObject} onUpdateObject={handleUpdateObject} />
             </div>
         </div>

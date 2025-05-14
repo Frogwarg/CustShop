@@ -1,6 +1,8 @@
 ﻿using DevAPI.Models.DTOs;
+using DevAPI.Data;
 using DevAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DevAPI.Controllers
 {
@@ -9,10 +11,12 @@ namespace DevAPI.Controllers
     public class CatalogController : ControllerBase
     {
         private readonly ICatalogService _catalogService;
+        private readonly StoreDbContext _context;
 
-        public CatalogController(ICatalogService catalogService)
+        public CatalogController(ICatalogService catalogService, StoreDbContext context)
         {
             _catalogService = catalogService;
+            _context = context;
         }
 
         [HttpGet]
@@ -35,6 +39,14 @@ namespace DevAPI.Controllers
                 return NotFound("Товар не найден.");
             }
             return Ok(item);
+        }
+        [HttpGet("tags")]
+        public async Task<ActionResult<List<string>>> GetTags()
+        {
+            var tags = await _context.Tags
+                .Select(t => t.Name)
+                .ToListAsync();
+            return Ok(new { tags });
         }
     }
 }

@@ -105,6 +105,7 @@ builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IDesignService, DesignService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<RoleManager<Role>>();
 
 builder.Services.AddControllers();

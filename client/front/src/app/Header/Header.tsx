@@ -53,10 +53,10 @@ const Header = () => {
                             {hasRole('Admin') && (
                                 <li>
                                     <Link 
-                                        href="/adminpanel"
+                                        href="/admin"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            handleProtectedLinkClick('/adminpanel');
+                                            handleProtectedLinkClick('/admin');
                                         }}>
                                         <span className="hover:text-gray-300">Админ панель</span>
                                     </Link>

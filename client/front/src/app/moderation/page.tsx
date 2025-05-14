@@ -1,9 +1,9 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import Image from 'next/image';
 import { toast } from "sonner";
+import authService from "../services/authService";
 
 interface Design {
     id: string;
@@ -29,12 +29,12 @@ const ModerationPage = () => {
     useEffect(() => {
         const fetchPendingDesigns = async () => {
             try {
-                const response = await fetch("http://localhost:5123/api/Moderation/pending", {
-                    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-                });
-                const data = await response.json();
-                setDesigns(data);
-                setFormData(data.reduce((acc: FormData, d: Design) => (
+                const response = await authService.axiosWithRefresh<Design[]>("get", "/Moderation/pending");
+                // const response = await fetch("http://localhost:5123/api/Moderation/pending", {
+                //     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                // });
+                setDesigns(response);
+                setFormData(response.reduce((acc: FormData, d: Design) => (
                     { ...acc, [d.id]: { price: "", tags: "", comment: "" } }
                 ), {}));
             } catch (error) {
@@ -58,15 +58,16 @@ const ModerationPage = () => {
             moderatorComment: formData[designId].comment,
         };
         try {
-            const response = await fetch(`http://localhost:5123/api/Moderation/${designId}/${action}`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-                body: JSON.stringify(action === "approve" ? data : { moderatorComment: data.moderatorComment }),
-            });
-            if (!response.ok) throw new Error("Ошибка");
+            const response = authService.axiosWithRefresh("post", `/Moderation/${designId}/${action}`, JSON.stringify(action === "approve" ? data : { moderatorComment: data.moderatorComment }));
+            // const response = await fetch(`http://localhost:5123/api/Moderation/${designId}/${action}`, {
+            //     method: "POST",
+            //     headers: {
+            //         "Content-Type": "application/json",
+            //         Authorization: `Bearer ${localStorage.getItem("token")}`,
+            //     },
+            //     body: JSON.stringify(action === "approve" ? data : { moderatorComment: data.moderatorComment }),
+            // });
+            if (!response) throw new Error("Ошибка");
             setDesigns(designs.filter((d) => d.id !== designId));
             toast.success(`Дизайн ${action === "approve" ? "одобрен" : "отклонён"}`);
         } catch (error) {
