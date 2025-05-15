@@ -7,6 +7,7 @@ namespace DevAPI.Models.Entities
     {
         public Guid Id { get; set; }
         public Guid UserId { get; set; }
+        public string? MiddleName { get; set; }
         public string? AvatarUrl { get; set; }
         public string? Bio { get; set; }
 

@@ -1,0 +1,83 @@
+.container {
+  padding: 16px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #1f2937;
+}
+
+.form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.input {
+  padding: 3px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
+  max-height: 30px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.th,
+.td {
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  text-align: left;
+}
+
+.th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+}
+
+.tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.editButton,
+.deleteButton,
+.saveButton,
+.cancelButton,
+.addButton {
+  padding: 6px 12px;
+  margin-right: 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.editButton {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.deleteButton {
+  background-color: #ef4444;
+  color: white;
+}
+
+.saveButton {
+  background-color: #22c55e;
+  color: white;
+}
+
+.cancelButton {
+  background-color: #6b7280;
+  color: white;
+}
+
+.addButton {
+  background-color: #10b981;
+  color: white;
+}

@@ -21,7 +21,6 @@ const TagManagement: React.FC = () => {
   const fetchTags = async () => {
     try {
       const response = await authService.axiosWithRefresh<Tag[]>("get", "/admin/tags");
-      console.log(response);
       setTags(response || []);
     } catch (error) {
       toast.error("Ошибка загрузки тегов");

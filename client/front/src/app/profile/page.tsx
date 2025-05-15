@@ -10,6 +10,7 @@ import styles from "./Profile.module.css";
 interface UserData {
   firstName: string;
   lastName: string;
+  middleName?: string;
   email: string;
   phoneNumber: string;
   avatarUrl?: string;
@@ -250,6 +251,15 @@ const ProfilePage = () => {
               />
             </div>
             <div className={styles.formGroup}>
+              <label className={styles.label}>Отчество:</label>
+              <input
+                type="text"
+                value={userData.middleName || ""}
+                onChange={(e) => setUserData({ ...userData, middleName: e.target.value })}
+                className={styles.input}
+              />
+            </div>
+            <div className={styles.formGroup}>
               <label className={styles.label}>Телефон:</label>
               <input
                 type="text"
@@ -259,7 +269,7 @@ const ProfilePage = () => {
               />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.label}>Био:</label>
+              <label className={styles.label}>Биография:</label>
               <input
                 type="text"
                 value={userData.bio || ""}

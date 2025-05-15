@@ -30,6 +30,7 @@
 
 .tabButton:hover {
   background-color: #e5e7eb;
+  color: #111827;
 }
 
 .activeTab {

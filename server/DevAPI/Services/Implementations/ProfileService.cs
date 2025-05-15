@@ -35,6 +35,7 @@ namespace DevAPI.Services
                 LastName = user.LastName,
                 PhoneNumber = user.PhoneNumber,
                 AvatarUrl = userProfile?.AvatarUrl,
+                MiddleName = userProfile?.MiddleName,
                 Bio = userProfile?.Bio
             };
         }
@@ -54,16 +55,18 @@ namespace DevAPI.Services
             {
                 user.UserProfile = new UserProfile
                 {
-                    Id = Guid.NewGuid(), // важно, иначе может быть Guid.Empty
+                    Id = Guid.NewGuid(),
                     UserId = userId,
+                    MiddleName = request.MiddleName,
                     AvatarUrl = request.AvatarUrl,
                     Bio = request.Bio,
                     LastLogin = DateTime.UtcNow
                 };
-                _context.UserProfiles.Add(user.UserProfile); // явное добавление
+                _context.UserProfiles.Add(user.UserProfile);
             }
             else
             {
+                user.UserProfile.MiddleName = request.MiddleName;
                 user.UserProfile.AvatarUrl = request.AvatarUrl;
                 user.UserProfile.Bio = request.Bio;
                 user.UserProfile.LastLogin = DateTime.UtcNow;

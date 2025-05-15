@@ -26,10 +26,23 @@ namespace DevAPI.Controllers
         }
 
         [HttpGet("users")]
-        public async Task<ActionResult<List<UserDto>>> GetUsers([FromQuery] string search = null)
+        public async Task<ActionResult<List<UserDto>>> GetUsers([FromQuery] string search = null, [FromQuery] string role = null)
         {
-            var users = await _adminService.GetUsersAsync(search);
+            var users = await _adminService.GetUsersAsync(search, role);
             return Ok(users);
+        }
+
+        [HttpPut("users/{id}")]
+        public async Task<IActionResult> UpdateUserNew(Guid id, [FromBody] UpdateUserRequest request)
+        {
+            await _adminService.UpdateUserAsync(id, request);
+            return Ok(new { message = "Пользователь обновлён" });
+        }
+        [HttpDelete("users/{id}")]
+        public async Task<IActionResult> DeleteUser(Guid id)
+        {
+            await _adminService.DeleteUserAsync(id);
+            return Ok(new { message = "Пользователь удалён" });
         }
 
         [HttpPut("users/{id}/roles")]
@@ -101,6 +114,19 @@ namespace DevAPI.Controllers
             _context.Tags.Remove(tag);
             await _context.SaveChangesAsync();
             return Ok(new { message = "Тег удалён" });
+        }
+
+        [HttpGet("action-logs")]
+        public async Task<ActionResult<(List<AdminActionLogDto> Logs, int TotalCount)>> GetAdminActionLogs(
+            [FromQuery] string actionType = null,
+            [FromQuery] string entityType = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var (logs, totalCount) = await _adminService.GetAdminActionLogsAsync(actionType, entityType, startDate, endDate, page, pageSize);
+            return Ok(new { Logs = logs, TotalCount = totalCount });
         }
     }
 }

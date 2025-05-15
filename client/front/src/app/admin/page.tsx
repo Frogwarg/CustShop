@@ -1,6 +1,8 @@
 "use client";
 import React, { useState } from "react";
 import TagManagement from "./tags/TagManagement";
+import UserManagement from "./users/UserManagement";
+import AdminActionLog from "./adminlogs/AdminActionLog";
 import styles from "./AdminPanel.module.css";
 
 const AdminPanel = () => {
@@ -10,6 +12,10 @@ const AdminPanel = () => {
     switch (activeTab) {
       case "tags":
         return <TagManagement />;
+      case "users":
+        return <UserManagement />;
+      case "adminlogs":
+        return <AdminActionLog />;
       default:
         return <div>Выберите вкладку</div>;
     }
@@ -24,6 +30,18 @@ const AdminPanel = () => {
           onClick={() => setActiveTab("tags")}
         >
           Теги
+        </button>
+        <button
+          className={`${styles.tabButton} ${activeTab === "users" ? styles.activeTab : ""}`}
+          onClick={() => setActiveTab("users")}
+        >
+          Пользователи
+        </button>
+        <button
+          className={`${styles.tabButton} ${activeTab === "adminlogs" ? styles.activeTab : ""}`}
+          onClick={() => setActiveTab("adminlogs")}
+        >
+          Логи действий администратора
         </button>
         {/* Другие вкладки можно добавить здесь */}
       </div>
