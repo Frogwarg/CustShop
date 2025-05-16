@@ -63,7 +63,8 @@ const AdminActionLog: React.FC = () => {
         });
       }
       setLogs(response?.logs || []);
-      setTotalPages(Math.ceil((response?.totalCount || 0) / pageSize));
+      const totalCount = Math.ceil((response?.totalCount || 0) / pageSize)
+      setTotalPages(totalCount != 0 ? totalCount : 1);
     } catch (error) {
       toast.error("Ошибка загрузки логов");
       console.error(error);

@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import TagManagement from "./tags/TagManagement";
 import UserManagement from "./users/UserManagement";
+import DesignManagement from "./designs/DesignManagement";
+import OrderManagement from "./orders/OrderManagement";
 import AdminActionLog from "./adminlogs/AdminActionLog";
 import styles from "./AdminPanel.module.css";
 
@@ -14,6 +16,10 @@ const AdminPanel = () => {
         return <TagManagement />;
       case "users":
         return <UserManagement />;
+      case "designs":
+        return <DesignManagement />;
+      case "orders":
+        return <OrderManagement />;
       case "adminlogs":
         return <AdminActionLog />;
       default:
@@ -36,6 +42,18 @@ const AdminPanel = () => {
           onClick={() => setActiveTab("users")}
         >
           Пользователи
+        </button>
+        <button
+          className={`${styles.tabButton} ${activeTab === "designs" ? styles.activeTab : ""}`}
+          onClick={() => setActiveTab("designs")}
+        >
+          Дизайны
+        </button>
+        <button
+          className={`${styles.tabButton} ${activeTab === "orders" ? styles.activeTab : ""}`}
+          onClick={() => setActiveTab("orders")}
+        >
+          Заказы
         </button>
         <button
           className={`${styles.tabButton} ${activeTab === "adminlogs" ? styles.activeTab : ""}`}

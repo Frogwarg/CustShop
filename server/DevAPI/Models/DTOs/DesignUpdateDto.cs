@@ -9,4 +9,11 @@
         public string DesignHash { get; set; }
         public string ProductType { get; set; }
     }
+    public class UpdateDesignRequest
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string ModerationStatus { get; set; }
+        public string ModeratorComment { get; set; }
+    }
 }

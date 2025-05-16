@@ -56,17 +56,17 @@ namespace DevAPI.Services.Implementations
 
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
-            await _userManager.UpdateAsync(user);
-
             var userProfile = await _context.Set<UserProfile>()
                 .FirstOrDefaultAsync(up => up.UserId == user.Id);
             if (userProfile != null)
             {
                 userProfile.LastLogin = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
             }
 
-                var sessionId = _httpContextAccessor.HttpContext?.Request.Cookies["cart_session_id"];
+            await _userManager.UpdateAsync(user);
+            await _context.SaveChangesAsync();
+
+            var sessionId = _httpContextAccessor.HttpContext?.Request.Cookies["cart_session_id"];
             if (!string.IsNullOrEmpty(sessionId))
             {
                 await _cartService.MergeAnonymousCart(user.Id, sessionId);

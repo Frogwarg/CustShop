@@ -21,11 +21,21 @@ namespace DevAPI.Controllers
     {
         private readonly IDesignService _designService;
         private readonly ILogger<DesignController> _logger;
+        private readonly StoreDbContext _context;
 
-        public DesignController(IDesignService designService, ILogger<DesignController> logger)
+        public DesignController(IDesignService designService, ILogger<DesignController> logger, StoreDbContext context)
         {
             _designService = designService;
             _logger = logger;
+            _context = context;
+        }
+        [HttpGet("tags")]
+        public async Task<ActionResult<List<TagDto>>> GetTags()
+        {
+            var tags = await _context.Tags
+                .Select(t => new TagDto { Id = t.Id, Name = t.Name })
+                .ToListAsync();
+            return Ok(tags);
         }
 
         [HttpGet("{designId}")]

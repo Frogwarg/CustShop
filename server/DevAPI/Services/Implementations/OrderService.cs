@@ -83,7 +83,7 @@ namespace DevAPI.Services.Implementations
                 TotalAmount = totalAmount,
                 DiscountAmount = discountAmount,
                 Status = "Pending",
-                PaymentStatus = "Pending",
+                PaymentStatus = "Paid", //поменять логику
                 DeliveryMethod = request.DeliveryMethod,
                 OrderComment = request.OrderComment,
                 CreatedAt = DateTime.UtcNow,

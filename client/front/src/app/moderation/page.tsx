@@ -15,7 +15,7 @@ interface Design {
 interface FormData {
     [key: string]: {
         price: string;
-        tags: string;
+        tagIds: string[];
         comment: string;
     };
 }
@@ -23,27 +23,41 @@ interface FormData {
 const ModerationPage = () => {
     const { hasRole } = useAuth();
     const [designs, setDesigns] = useState<Design[]>([]);
+    const [availableTags, setAvailableTags] = useState<{ id: string; name: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [formData, setFormData] = useState<FormData>({});
 
     useEffect(() => {
-        const fetchPendingDesigns = async () => {
+        const fetchData = async () => {
             try {
-                const response = await authService.axiosWithRefresh<Design[]>("get", "/Moderation/pending");
-                // const response = await fetch("http://localhost:5123/api/Moderation/pending", {
-                //     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-                // });
-                setDesigns(response);
-                setFormData(response.reduce((acc: FormData, d: Design) => (
-                    { ...acc, [d.id]: { price: "", tags: "", comment: "" } }
-                ), {}));
+                // Fetch pending designs
+                const designsResponse = await authService.axiosWithRefresh<Design[]>("get", "/Moderation/pending");
+                setDesigns(designsResponse);
+                
+                // Fetch available tags
+                await authService
+                    .axiosWithRefresh<{ id: string; name: string }[]>("get", "/design/tags")
+                    .then((response) => {
+                        setAvailableTags(response || []);
+                    })
+                    .catch((error) => {
+                        toast.error("Ошибка загрузки тегов");
+                        console.error(error);
+                    });
+                
+                // Initialize form data
+                setFormData(designsResponse.reduce((acc: FormData, d) => ({
+                    ...acc,
+                    [d.id]: { price: "", tagIds: [], comment: "" }
+                }), {}));
             } catch (error) {
                 console.error("Ошибка:", error);
             } finally {
                 setLoading(false);
             }
         };
-        if (hasRole("Moderator")) fetchPendingDesigns();
+        
+        if (hasRole("Moderator")) fetchData();
     }, [hasRole]);
 
     const handleDecision = async (designId: string, action: 'approve' | 'reject') => {
@@ -54,19 +68,11 @@ const ModerationPage = () => {
             name: design.name,
             description: design.description,
             price: parseFloat(formData[designId].price),
-            tags: formData[designId].tags,
+            tagIds: formData[designId].tagIds,
             moderatorComment: formData[designId].comment,
         };
         try {
             const response = authService.axiosWithRefresh("post", `/Moderation/${designId}/${action}`, JSON.stringify(action === "approve" ? data : { moderatorComment: data.moderatorComment }));
-            // const response = await fetch(`http://localhost:5123/api/Moderation/${designId}/${action}`, {
-            //     method: "POST",
-            //     headers: {
-            //         "Content-Type": "application/json",
-            //         Authorization: `Bearer ${localStorage.getItem("token")}`,
-            //     },
-            //     body: JSON.stringify(action === "approve" ? data : { moderatorComment: data.moderatorComment }),
-            // });
             if (!response) throw new Error("Ошибка");
             setDesigns(designs.filter((d) => d.id !== designId));
             toast.success(`Дизайн ${action === "approve" ? "одобрен" : "отклонён"}`);
@@ -99,12 +105,24 @@ const ModerationPage = () => {
                         value={formData[design.id]?.price || ""}
                         onChange={(e) => setFormData({ ...formData, [design.id]: { ...formData[design.id], price: e.target.value } })}
                     />
-                    <input
-                        type="text"
-                        placeholder="Теги (через запятую)"
-                        value={formData[design.id]?.tags || ""}
-                        onChange={(e) => setFormData({ ...formData, [design.id]: { ...formData[design.id], tags: e.target.value } })}
-                    />
+                    <select
+                        multiple
+                        value={formData[design.id]?.tagIds || []}
+                        onChange={(e) => setFormData({ 
+                            ...formData, 
+                            [design.id]: { 
+                                ...formData[design.id], 
+                                tagIds: Array.from(e.target.selectedOptions, (option) => option.value)
+                            }
+                        })}
+                        style={{ width: '100px', padding: '8px', border: '1px solid #ccc', borderRadius: '4px', minHeight: '100px' }}
+                    >
+                        {availableTags.map((tag) => (
+                            <option key={tag.id} value={tag.id}>
+                                {tag.name}
+                            </option>
+                        ))}
+                    </select>
                     <textarea
                         placeholder="Комментарий модератора"
                         value={formData[design.id]?.comment || ""}

@@ -9,19 +9,35 @@ interface Tag {
   name: string;
 }
 
+interface TagResponse { 
+  tags: Tag[];
+  totalCount: number;
+}
+
 const TagManagement: React.FC = () => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [newTagName, setNewTagName] = useState("");
   const [editTag, setEditTag] = useState<{ id: string; name: string } | null>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    fetchTags();
-  }, []);
+  useEffect(() => { fetchTags(); },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  [search, page]);
 
   const fetchTags = async () => {
     try {
-      const response = await authService.axiosWithRefresh<Tag[]>("get", "/admin/tags");
-      setTags(response || []);
+      const queryParams = new URLSearchParams({
+        ...(search && { search }),
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+      });
+      const response = await authService.axiosWithRefresh<TagResponse>("get", `/admin/tags?${queryParams.toString()}`);
+      setTags(response?.tags || []);
+      const totalCount = Math.ceil((response?.totalCount || 0) / pageSize)
+      setTotalPages(totalCount != 0 ? totalCount : 1);
     } catch (error) {
       toast.error("Ошибка загрузки тегов");
       console.error(error);
@@ -71,20 +87,37 @@ const TagManagement: React.FC = () => {
     }
   };
 
+  const handlePreviousPage = () => {
+    if (page > 1) setPage(page - 1);
+  };
+
+  const handleNextPage = () => {
+    if (page < totalPages) setPage(page + 1);
+  };
+
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>Управление тегами</h2>
-      <div className={styles.form}>
+      <div className={styles.nav}>
         <input
           type="text"
-          value={newTagName}
-          onChange={(e) => setNewTagName(e.target.value)}
-          placeholder="Новый тег"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Поиск по тегам"
           className={styles.input}
         />
-        <button onClick={createTag} className={styles.addButton}>
-          Добавить
-        </button>
+        <div className={styles.form}>
+          <input
+            type="text"
+            value={newTagName}
+            onChange={(e) => setNewTagName(e.target.value)}
+            placeholder="Новый тег"
+            className={styles.input}
+          />
+          <button onClick={createTag} className={styles.addButton}>
+            Добавить
+          </button>
+        </div>
       </div>
       {editTag && (
         <div className={styles.form}>
@@ -134,6 +167,23 @@ const TagManagement: React.FC = () => {
           ))}
         </tbody>
       </table>
+      <div className={styles.pagination}>
+        <button
+          onClick={handlePreviousPage}
+          disabled={page === 1}
+          className={styles.paginationButton}
+        >
+          Предыдущая
+        </button>
+        <span>Страница {page} из {totalPages}</span>
+        <button
+          onClick={handleNextPage}
+          disabled={page === totalPages}
+          className={styles.paginationButton}
+        >
+          Следующая
+        </button>
+      </div>
     </div>
   );
 };

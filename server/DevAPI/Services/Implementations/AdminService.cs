@@ -1,5 +1,4 @@
-﻿using Azure.Core;
-using DevAPI.Data;
+﻿using DevAPI.Data;
 using DevAPI.Exceptions;
 using DevAPI.Models.DTOs;
 using DevAPI.Models.Entities;
@@ -7,9 +6,8 @@ using DevAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace DevAPI.Services.Implementations
 {
@@ -28,17 +26,45 @@ namespace DevAPI.Services.Implementations
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<List<UserDto>> GetUsersAsync(string search = null, string role = null)
+        public async Task<(List<TagDto> Tags, int TotalCount)> GetTagsAsync(string search = null, int page = 1, int pageSize = 10)
         {
-            var users = await _userManager.Users
-                .Include(u => u.UserProfile)
-                .Where(u => string.IsNullOrEmpty(search) ||
-                           u.Id.ToString().Contains(search) ||
-                           u.FirstName.Contains(search) ||
-                           u.LastName.Contains(search) ||
-                           u.PhoneNumber.Contains(search) ||
-                           u.Email.Contains(search) ||
-                           (u.UserProfile != null && u.UserProfile.MiddleName.Contains(search)))
+            var query = _context.Tags.AsQueryable();
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(t => t.Name.Contains(search));
+            }
+            var totalCount = await query.CountAsync();
+            var tags = await query
+                .OrderBy(t => t.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(t => new TagDto
+                {
+                    Id = t.Id,
+                    Name = t.Name
+                })
+                .ToListAsync();
+            return (tags, totalCount);
+        }
+
+        public async Task<(List<UserDto> Users, int TotalCount)> GetUsersAsync(string search = null, string role = null, int page = 1, int pageSize = 10)
+        {
+            var query = _userManager.Users.Include(u => u.UserProfile).AsQueryable();
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(u =>
+                    u.Id.ToString().Contains(search) ||
+                    u.FirstName.Contains(search) ||
+                    u.LastName.Contains(search) ||
+                    u.PhoneNumber.Contains(search) ||
+                    u.Email.Contains(search) ||
+                    (u.UserProfile != null && u.UserProfile.MiddleName.Contains(search)));
+            }
+
+            var totalCount = await query.CountAsync();
+            var users = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             var userDtos = new List<UserDto>();
@@ -62,7 +88,7 @@ namespace DevAPI.Services.Implementations
                 }
             }
 
-            return userDtos;
+            return (userDtos, totalCount);
         }
 
         public async Task UpdateUserAsync(Guid userId, UpdateUserRequest request)
@@ -106,66 +132,192 @@ namespace DevAPI.Services.Implementations
             await LogAdminActionAsync("DeleteUser", "User", userId, "Пользователь удалён");
         }
 
-        public async Task UpdateUserRolesAsync(Guid userId, List<string> roles)
+        public async Task<(List<AdminDesignDto> Designs, int TotalCount)> GetDesignsAsync(string search = null, string moderationStatus = null, Guid? userId = null, int page = 1, int pageSize = 10)
         {
-            var user = await _userManager.FindByIdAsync(userId.ToString());
-            if (user == null) throw new NotFoundException("Пользователь не найден");
+            var query = _context.Designs
+                .Include(d => d.User)
+                .Include(d => d.DesignType)
+                .AsQueryable();
 
-            var currentRoles = await _userManager.GetRolesAsync(user);
-            await _userManager.RemoveFromRolesAsync(user, currentRoles);
-            await _userManager.AddToRolesAsync(user, roles);
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(d => d.Name.Contains(search) || d.Description.Contains(search));
+            }
 
-            await LogAdminActionAsync("UpdateRoles", "User", userId, JsonSerializer.Serialize(new { NewRoles = roles }));
+            if (!string.IsNullOrEmpty(moderationStatus))
+            {
+                query = query.Where(d => d.ModerationStatus == moderationStatus);
+            }
+
+            if (userId.HasValue)
+            {
+                query = query.Where(d => d.UserId == userId.Value);
+            }
+
+            var totalCount = await query.CountAsync();
+            var designs = await query
+                .OrderByDescending(d => d.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(d => new AdminDesignDto
+                {
+                    Id = d.Id,
+                    UserId = d.UserId,
+                    UserName = d.User != null ? $"{d.User.FirstName} {d.User.LastName}" : "Неизвестный",
+                    Name = d.Name,
+                    Description = d.Description,
+                    ProductType = d.ProductType,
+                    PreviewUrl = d.PreviewUrl,
+                    CreatedAt = d.CreatedAt,
+                    ModerationStatus = d.ModerationStatus,
+                    ModeratorComment = d.ModeratorComment
+                })
+                .ToListAsync();
+
+            return (designs, totalCount);
         }
 
-        public async Task BlockUserAsync(Guid userId)
+        public async Task UpdateDesignAsync(Guid designId, UpdateDesignRequest request)
         {
-            var user = await _userManager.FindByIdAsync(userId.ToString());
-            if (user == null) throw new NotFoundException("Пользователь не найден");
+            var design = await _context.Designs.FindAsync(designId);
+            if (design == null) throw new NotFoundException("Дизайн не найден");
 
-            await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddYears(100));
-            await LogAdminActionAsync("BlockUser", "User", userId, "Пользователь заблокирован");
+            design.Name = request.Name;
+            design.Description = request.Description;
+            design.ModerationStatus = request.ModerationStatus;
+            design.ModeratorComment = request.ModeratorComment;
+
+            if (design.ModerationStatus == "Approved")
+            {
+                var catalogItem = await _context.CatalogItems.FirstOrDefaultAsync(x => x.DesignId == designId);
+                if (catalogItem != null)
+                {
+                    _logger.LogInformation("Дизайн привязан к предмету каталога");
+                    catalogItem.Name = request.Name;
+                    catalogItem.Description = request.Description;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            await LogAdminActionAsync("UpdateDesign", "Design", designId, new { request.Name, request.Description, request.ModerationStatus, request.ModeratorComment });
         }
 
-        public async Task<List<OrderDto>> GetOrdersAsync(string status = null, string userEmail = null)
+        public async Task DeleteDesignAsync(Guid designId)
+        {
+            var design = await _context.Designs.FindAsync(designId);
+            if (design == null) throw new NotFoundException("Дизайн не найден");
+
+            _context.Designs.Remove(design);
+            await _context.SaveChangesAsync();
+            await LogAdminActionAsync("DeleteDesign", "Design", designId, "Дизайн удалён");
+        }
+
+        public async Task<(List<AdminOrderDto> Orders, int TotalCount)> GetOrdersAsync(
+            string search = null,
+            string status = null,
+            string paymentStatus = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
+            string customerName = null,
+            int page = 1,
+            int pageSize = 10)
         {
             var query = _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Design)
+                .Include(o => o.Address)
                 .AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                if (decimal.TryParse(search, out var amount))
+                {
+                    query = query.Where(o => o.TotalAmount == amount);
+                }
+            }
 
             if (!string.IsNullOrEmpty(status))
             {
                 query = query.Where(o => o.Status == status);
             }
-            if (!string.IsNullOrEmpty(userEmail))
+
+            if (!string.IsNullOrEmpty(paymentStatus))
             {
-                query = query.Where(o => o.User.Email.Contains(userEmail));
+                query = query.Where(o => o.PaymentStatus == paymentStatus);
             }
 
-            return await query
-                .Select(o => new OrderDto
+            if (startDate.HasValue)
+            {
+                query = query.Where(o => o.CreatedAt >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                query = query.Where(o => o.CreatedAt <= endDate.Value);
+            }
+
+            if (!string.IsNullOrEmpty(customerName))
+            {
+                query = query.Where(o =>
+                    (o.FirstName + " " + o.LastName).Contains(customerName) ||
+                    (o.LastName + " " + o.FirstName).Contains(customerName));
+            }
+
+            var totalCount = await query.CountAsync();
+            var orders = await query
+                .OrderByDescending(o => o.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(o => new AdminOrderDto
                 {
                     Id = o.Id,
                     TotalAmount = o.TotalAmount,
-                    DiscountAmount = o.DiscountAmount,
                     Status = o.Status,
                     PaymentStatus = o.PaymentStatus,
+                    DeliveryMethod = o.DeliveryMethod,
                     CreatedAt = o.CreatedAt,
+                    OrderComment = o.OrderComment,
+                    AdminComment = o.AdminComment,
+                    FirstName = o.FirstName,
+                    LastName = o.LastName,
+                    MiddleName = o.MiddleName,
+                    Email = o.Email,
+                    PhoneNumber = o.PhoneNumber,
+                    Address = new AddressDto
+                    {
+                        Id = o.Address.Id.ToString(),
+                        Street = o.Address.Street,
+                        City = o.Address.City,
+                        State = o.Address.State,
+                        PostalCode = o.Address.PostalCode,
+                        Country = o.Address.Country
+                    },
+                    OrderItems = o.OrderItems.Select(oi => new OrderItemDto
+                    {
+                        DesignId = oi.DesignId,
+                        DesignName = oi.Design.Name,
+                        Quantity = oi.Quantity,
+                        UnitPrice = oi.UnitPrice,
+                        PreviewUrl = oi.Design.PreviewUrl
+                    }).ToList()
                 })
                 .ToListAsync();
+
+            return (orders, totalCount);
         }
 
-        public async Task UpdateOrderStatusAsync(Guid orderId, string status, string adminComment = null)
+        public async Task UpdateOrderStatusAsync(Guid orderId, string status, string paymentStatus, string adminComment = null)
         {
             var order = await _context.Orders.FindAsync(orderId);
             if (order == null) throw new NotFoundException("Заказ не найден");
 
             order.Status = status;
+            order.PaymentStatus = paymentStatus;
             order.AdminComment = adminComment;
             await _context.SaveChangesAsync();
 
-            await LogAdminActionAsync("UpdateOrderStatus", "Order", orderId, new { Status = status, AdminComment = adminComment });
+            await LogAdminActionAsync("UpdateOrderStatus", "Order", orderId, new { Status = status, PaymentStatus = paymentStatus, AdminComment = adminComment });
         }
 
         public async Task LogAdminActionAsync(string actionType, string entityType, Guid? entityId, object details)

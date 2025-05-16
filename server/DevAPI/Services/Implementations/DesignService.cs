@@ -5,6 +5,8 @@ using Google;
 using DevAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using DevAPI.Exceptions;
+using Microsoft.AspNetCore.Identity;
+using DevAPI.Data.Seeders;
 
 namespace DevAPI.Services.Implementations
 {
@@ -12,11 +14,13 @@ namespace DevAPI.Services.Implementations
     {
         private readonly StoreDbContext _context;
         private readonly ILogger<DesignService> _logger;
+        private readonly UserManager<User> _userManager;
 
-        public DesignService(StoreDbContext context, ILogger<DesignService> logger)
+        public DesignService(StoreDbContext context, ILogger<DesignService> logger, UserManager<User> userManager)
         {
             _context = context;
             _logger = logger;
+            _userManager = userManager;
         }
 
         public async Task<DesignDto?> GetDesignById(Guid designId, Guid? userId, string sessionId)
@@ -59,7 +63,10 @@ namespace DevAPI.Services.Implementations
                     .AnyAsync(d => d.Id == designId &&
                                   (d.UserId == userId || d.CartItems.Any(ci => ci.UserId == userId)));
 
-                if (!isOwnerOrInCart)
+                var user = _userManager.Users.FirstOrDefault(u => u.Id == userId);
+                var roles = await _userManager.GetRolesAsync(user);
+
+                if (!isOwnerOrInCart && !roles.Contains("Admin"))
                 {
                     _logger.LogWarning($"Дизайн {designId} не принадлежит пользователю {userId} и не находится в его корзине");
                     return null;

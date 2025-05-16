@@ -1,0 +1,153 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.title {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.input {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  flex: 1;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.th,
+.td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.tr {
+  cursor: pointer;
+}
+
+.tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.saveButton {
+  padding: 8px 16px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancelButton {
+  padding: 8px 16px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.editButton {
+  padding: 6px 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.detailsContent {
+  padding: 16px;
+  background-color: #f5f5f5;
+}
+
+.orderDetails {
+  display: flex;
+  gap: 20px;
+}
+
+.orderItems {
+  flex: 2;
+}
+
+.customerInfo {
+  flex: 1;
+}
+
+.subTitle {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.itemList {
+  list-style: none;
+  padding: 0;
+}
+
+.orderItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.orderItemImage {
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.infoTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.infoLabel {
+  font-weight: bold;
+  padding: 4px;
+  width: 30%;
+}
+
+.infoValue {
+  padding: 4px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.paginationButton {
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.paginationButton:disabled {
+  background-color: #f2f2f2;
+  cursor: not-allowed;
+}

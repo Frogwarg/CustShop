@@ -15,6 +15,12 @@
   margin-bottom: 16px;
   align-items: center;
 }
+.nav{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
 
 .input {
   padding: 8px;
@@ -76,6 +82,7 @@
   width: 100%;
   border-collapse: collapse;
   border: 1px solid #d1d5db;
+  margin-bottom: 20px;
 }
 
 .th {
@@ -122,4 +129,24 @@
 
 .deleteButton:hover {
   background-color: #dc2626;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.paginationButton {
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.paginationButton:disabled {
+  background-color: #f2f2f2;
+  cursor: not-allowed;
 }

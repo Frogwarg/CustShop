@@ -15,24 +15,37 @@ interface User {
   roles: string[];
 }
 
+interface UserResponse {
+  users: User[];
+  totalCount: number;
+}
+
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [editUser, setEditUser] = useState<User | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, roleFilter]);
+  }, [search, roleFilter, page]);
 
   const fetchUsers = async () => {
     try {
-      const response = await authService.axiosWithRefresh<User[]>(
-        "get",
-        `/admin/users?search=${search}&role=${roleFilter}`
-      );
-      setUsers(response || []);
+      const queryParams = new URLSearchParams({
+        ...(search && { search }),
+        ...(roleFilter && { role: roleFilter }),
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+      });
+      const response = await authService.axiosWithRefresh<UserResponse>( "get", `/admin/users?${queryParams.toString()}`);
+      setUsers(response?.users || []);
+      const totalCount = Math.ceil((response?.totalCount || 0) / pageSize)
+      setTotalPages(totalCount != 0 ? totalCount : 1);
     } catch (error) {
       toast.error("Ошибка загрузки пользователей");
       console.error(error);
@@ -69,6 +82,16 @@ const UserManagement: React.FC = () => {
       console.error(error);
     }
   };
+
+  const handlePreviousPage = () => {
+    if (page > 1)
+      setPage(page - 1);
+  };
+
+  const handleNextPage = () => {
+    if (page < totalPages)
+      setPage(page + 1);
+    };
 
   return (
     <div className={styles.container}>
@@ -190,6 +213,23 @@ const UserManagement: React.FC = () => {
           ))}
         </tbody>
       </table>
+      <div className={styles.pagination}>
+        <button
+          onClick={handlePreviousPage}
+          disabled={page === 1}
+          className={styles.paginationButton}
+        >
+          Предыдущая
+        </button>
+        <span>Страница {page} из {totalPages}</span>
+        <button
+          onClick={handleNextPage}
+          disabled={page === totalPages}
+          className={styles.paginationButton}
+        >
+          Следующая
+        </button>
+      </div>
     </div>
   );
 };
