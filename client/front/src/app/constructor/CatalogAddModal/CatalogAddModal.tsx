@@ -16,6 +16,16 @@ interface CatalogAddModalProps {
   }) => void;
 }
 
+interface Tag {
+  id: string;
+  name: string;
+}
+
+interface TagResponse { 
+  tags: Tag[];
+  totalCount: number;
+}
+
 const CatalogAddModal: React.FC<CatalogAddModalProps> = ({
   isOpen,
   onClose,
@@ -31,9 +41,9 @@ const CatalogAddModal: React.FC<CatalogAddModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       authService
-        .axiosWithRefresh<{ id: string; name: string }[]>("get", "/admin/tags")
+        .axiosWithRefresh<TagResponse>("get", "/admin/tags")
         .then((response) => {
-          setAvailableTags(response || []);
+          setAvailableTags(response.tags || []);
         })
         .catch((error) => {
           toast.error("Ошибка загрузки тегов");
