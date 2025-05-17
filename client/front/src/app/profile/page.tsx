@@ -505,7 +505,7 @@ const ProfilePage = () => {
                     alt={design.name}
                     width={100}
                     height={100}
-                    style={{ objectFit: 'cover' }}
+                    style={{ objectFit: 'contain' }}
                   />
                   <div style={{ flex: 1 }}>
                     <p><strong>Название:</strong> {design.name}</p>

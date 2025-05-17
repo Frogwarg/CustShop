@@ -31,7 +31,7 @@ namespace DevAPI.Services.Implementations
             var query = _context.Tags.AsQueryable();
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(t => t.Name.Contains(search));
+                query = query.Where(t => t.Name.ToLower().Contains(search.ToLower()));
             }
             var totalCount = await query.CountAsync();
             var tags = await query
@@ -52,13 +52,14 @@ namespace DevAPI.Services.Implementations
             var query = _userManager.Users.Include(u => u.UserProfile).AsQueryable();
             if (!string.IsNullOrEmpty(search))
             {
+                string lowSearch = search.ToLower();
                 query = query.Where(u =>
-                    u.Id.ToString().Contains(search) ||
-                    u.FirstName.Contains(search) ||
-                    u.LastName.Contains(search) ||
-                    u.PhoneNumber.Contains(search) ||
-                    u.Email.Contains(search) ||
-                    (u.UserProfile != null && u.UserProfile.MiddleName.Contains(search)));
+                    u.Id.ToString().Contains(lowSearch) ||
+                    u.FirstName.ToLower().Contains(lowSearch) ||
+                    u.LastName.ToLower().Contains(lowSearch) ||
+                    u.PhoneNumber.ToLower().Contains(lowSearch) ||
+                    u.Email.ToLower().Contains(lowSearch) ||
+                    (u.UserProfile != null && u.UserProfile.MiddleName.ToLower().Contains(lowSearch)));
             }
 
             var totalCount = await query.CountAsync();
@@ -141,7 +142,7 @@ namespace DevAPI.Services.Implementations
 
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(d => d.Name.Contains(search) || d.Description.Contains(search));
+                query = query.Where(d => d.Name.ToLower().Contains(search.ToLower()) || d.Description.ToLower().Contains(search.ToLower()));
             }
 
             if (!string.IsNullOrEmpty(moderationStatus))

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import authService from "../../services/authService";
+import useDebounce from "../../utils/useDebounce";
 import styles from "./TagManagement.module.css";
 
 interface Tag {
@@ -23,20 +24,23 @@ const TagManagement: React.FC = () => {
   const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => { fetchTags(); },
+  const debouncedSearch = useDebounce(search, 500);
+
+  useEffect(() => {
+    fetchTags();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  [search, page]);
+  }, [debouncedSearch, page]);
 
   const fetchTags = async () => {
     try {
       const queryParams = new URLSearchParams({
-        ...(search && { search }),
+        ...(debouncedSearch && { search: debouncedSearch }),
         page: page.toString(),
         pageSize: pageSize.toString(),
       });
       const response = await authService.axiosWithRefresh<TagResponse>("get", `/admin/tags?${queryParams.toString()}`);
       setTags(response?.tags || []);
-      const totalCount = Math.ceil((response?.totalCount || 0) / pageSize)
+      const totalCount = Math.ceil((response?.totalCount || 0) / pageSize);
       setTotalPages(totalCount != 0 ? totalCount : 1);
     } catch (error) {
       toast.error("Ошибка загрузки тегов");

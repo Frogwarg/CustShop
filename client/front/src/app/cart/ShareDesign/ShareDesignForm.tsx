@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { toast } from 'sonner';
 import authService from "../../services/authService";
+import styles from '../styles.module.css';
 
 interface ShareDesignFormProps {
     designId: string;
@@ -31,25 +32,31 @@ const ShareDesignForm: React.FC<ShareDesignFormProps> = ({ designId, onClose, on
     };
 
     return (
-        <div style={{ border: "1px solid #ccc", padding: "20px", position: "fixed", top: "20%", left: "20%", background: "white" }}>
-            <h2>Поделиться дизайном</h2>
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    placeholder="Название"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                />
-                <textarea
-                    placeholder="Описание"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    required
-                />
-                <button type="submit">Отправить</button>
-                <button type="button" onClick={onClose}>Отмена</button>
-            </form>
+        <div className={styles.modalOverlay}>
+            <div className={styles.modal}>
+                <h2 className={styles.modalTitle}>Поделиться дизайном</h2>
+                <form onSubmit={handleSubmit} className={styles.form}>
+                    <input
+                        type="text"
+                        placeholder="Название"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                        className={styles.input}
+                    />
+                    <textarea
+                        placeholder="Описание"
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        required
+                        className={styles.textarea}
+                    />
+                    <div className={styles.buttonGroup}>
+                        <button type="submit" className={styles.submitButton}>Отправить</button>
+                        <button type="button" onClick={onClose} className={styles.cancelButton}>Отмена</button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };

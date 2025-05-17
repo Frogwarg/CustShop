@@ -24,9 +24,10 @@ namespace DevAPI.Controllers
             [FromQuery] string? tags = null,
             [FromQuery] string? productType = null,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null)
         {
-            var items = await _catalogService.GetCatalogItems(tags, productType, page, pageSize);
+            var items = await _catalogService.GetCatalogItems(tags, productType, page, pageSize, search);
             return Ok(items);
         }
 

@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import CartItem from './cartitem';
 import ShareDesignForm from './ShareDesign/ShareDesignForm';
+import styles from './styles.module.css';
 
 interface CartItem {
     id: number;
@@ -41,7 +42,7 @@ export default function Cart() {
     }, []);
 
     if (loading) {
-        return <div>Загрузка корзины...</div>;
+        return <div className={styles.loading}>Загрузка корзины...</div>;
     }
 
     const editDesign = (designId: string) => {
@@ -49,7 +50,7 @@ export default function Cart() {
     };
 
     const handleQuantityChange = async (designId: string, newQuantity: number) => {
-        if (newQuantity < 1) return; // Предотвращаем установку количества меньше 1
+        if (newQuantity < 1) return;
         await updateQuantity(designId, newQuantity);
     };
 
@@ -66,11 +67,11 @@ export default function Cart() {
     };
 
     return (
-        <div>
+        <div className={styles.container}>
             {cartItems.length === 0 ? (
-                <div>Корзина пуста</div>
+                <div className={styles.emptyCart}>Корзина пуста</div>
             ) : (
-                <div>
+                <div className={styles.cartContent}>
                     {cartItems.map((item) => (
                         <CartItem
                             key={item.design.id}
@@ -81,21 +82,13 @@ export default function Cart() {
                             onShare={handleShare}
                         />
                     ))}
-                    <div>
+                    <div className={styles.total}>
                         Итого: {cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)} руб.
                     </div>
                     <button
                         onClick={handleCheckout}
                         disabled={cartItems.length === 0}
-                        style={{
-                        padding: '10px 20px',
-                        backgroundColor: cartItems.length === 0 ? '#ccc' : '#0070f3',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '5px',
-                        cursor: cartItems.length === 0 ? 'not-allowed' : 'pointer',
-                        marginTop: '20px',
-                        }}
+                        className={styles.checkoutButton}
                     >
                         Оформить заказ
                     </button>

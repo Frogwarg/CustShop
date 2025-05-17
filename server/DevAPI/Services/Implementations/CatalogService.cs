@@ -65,7 +65,7 @@ namespace DevAPI.Services.Implementations
             return catalogItem;
         }
 
-        public async Task<PagedCatalogResponse> GetCatalogItems(string? tags, string? productType, int page, int pageSize)
+        public async Task<PagedCatalogResponse> GetCatalogItems(string? tags, string? productType, int page, int pageSize, string? search)
         {
             var query = _context.CatalogItems
                 .Include(c => c.Design)
@@ -73,6 +73,12 @@ namespace DevAPI.Services.Implementations
                 .Include(c => c.CatalogItemTags)
                 .ThenInclude(cit => cit.Tag)
                 .AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(c => c.Name.ToLower().Contains(search.ToLower()) ||
+                                       c.Description.ToLower().Contains(search.ToLower()));
+            }
 
             if (!string.IsNullOrEmpty(tags))
             {

@@ -1,10 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import Image from 'next/image';
+import styles from './styles.module.css';
 
 const ProductPage = () => {
-  const params = useParams(); // Получаем динамические параметры
+  const params = useParams();
   const catalogId = params?.catalogId as string;
   interface Product {
     id: string;
@@ -50,7 +52,7 @@ const ProductPage = () => {
   const handleAddToCart = async () => {
     try {
       if (!product) {
-        alert('Ошибка: Товар не найден.');
+        toast.error('Ошибка: Товар не найден.');
         return;
       }
       const response = await fetch('/api/cart/add', {
@@ -71,68 +73,62 @@ const ProductPage = () => {
         })
       });
       if (response.ok) {
-        alert('Товар добавлен в корзину!');
+        toast.success('Товар добавлен в корзину!');
       } else {
-        alert('Ошибка при добавлении в корзину.');
+        toast.error('Ошибка при добавлении в корзину.');
       }
     } catch (error) {
       console.error('Ошибка:', error);
-      alert('Ошибка при добавлении в корзину.');
+      toast.error('Ошибка при добавлении в корзину.');
     }
   };
 
   const handleOpenConstructor = () => {
-    // Перенаправляем в конструктор с catalogId
     if (!product) {
-        alert('Ошибка: Товар не найден.');
-        return;
+      alert('Ошибка: Товар не найден.');
+      return;
     }
     router.push(`/constructor?designId=${product.designId}`);
   };
 
-
-  if (loading) return <div>Загрузка...</div>;
-  if (!product) return <div>Товар не найден.</div>;
+  if (loading) return <div className={styles.loading}>Загрузка...</div>;
+  if (!product) return <div className={styles.error}>Товар не найден.</div>;
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex flex-col md:flex-row gap-8">
-        <div className="md:w-1/2">
+    <div className={styles.container}>
+      <div className={styles.productWrapper}>
+        <div className={styles.imageContainer}>
           <Image
-            width={300}
-            height={300}
+            width={400}
+            height={400}
             src={product.previewUrl}
             alt={product.name}
-            className="w-full h-auto rounded-md"
+            className={styles.productImage}
           />
         </div>
-        <div className="md:w-1/2">
-          <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
-          <p className="text-gray-600 mb-4">{product.description}</p>
-          <p className="text-lg font-bold mb-4">
+        <div className={styles.detailsContainer}>
+          <h1 className={styles.productTitle}>{product.name}</h1>
+          <p className={styles.productDescription}>{product.description}</p>
+          <div className={styles.priceContainer}>
             {product.discountedPrice ? (
               <>
-                <span className="line-through text-gray-500 mr-2">
-                  {product.price} ₽
-                </span>
-                <span>{product.discountedPrice} ₽</span>
+                <span className={styles.originalPrice}>{product.price} ₽</span>
+                <span className={styles.discountedPrice}>{product.discountedPrice} ₽</span>
               </>
             ) : (
-              `${product.price} ₽`
+              <span className={styles.price}>{product.price} ₽</span>
             )}
-          </p>
-          <p className="text-gray-500 mb-2">Теги: {product.tags}</p>
-          <p className="text-gray-500 mb-2">Автор: {product.authorName}</p>
-          <p className="text-gray-500 mb-2">Тип продукта: {product.productType}</p>
-          <div className="mb-4">
-            <label htmlFor="size" className="block text-sm font-medium">
-              Размер
-            </label>
+          </div>
+          <p className={styles.productInfo}>Теги: {product.tags}</p>
+          <p className={styles.productInfo}>Автор: {product.authorName}</p>
+          <p className={styles.productInfo}>Тип продукта: {product.productType}</p>
+          <div className={styles.inputGroup}>
+            <label htmlFor="size" className={styles.label}>Размер</label>
             <select
               id="size"
               value={selectedSize}
               onChange={(e) => setSelectedSize(e.target.value)}
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+              className={styles.select}
             >
               {product.sizes.map((size) => (
                 <option key={size} value={size}>
@@ -141,38 +137,38 @@ const ProductPage = () => {
               ))}
             </select>
           </div>
-          <div className="mb-4">
-            <label htmlFor="material" className="block text-sm font-medium">
-              Материал
-            </label>
-            <p>{product.materials.join(', ')}</p>
+          <div className={styles.inputGroup}>
+            <label htmlFor="material" className={styles.label}>Материал</label>
+            <p className={styles.material}>{product.materials.join(', ')}</p>
           </div>
-          <div className="mb-4">
-            <label htmlFor="quantity" className="block text-sm font-medium">
-              Количество
-            </label>
+          <div className={styles.inputGroup}>
+            <label htmlFor="quantity" className={styles.label}>Количество</label>
             <input
               type="number"
               id="quantity"
               value={quantity}
               onChange={(e) => setQuantity(Number(e.target.value))}
               min="1"
-              className="mt-1 block w-24 border-gray-300 rounded-md shadow-sm"
+              className={styles.input}
             />
           </div>
-          <p className="text-gray-500 mb-4">{product.additionalInfo}</p>
-          <button
-            onClick={handleAddToCart}
-            className="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600"
-          >
-            Добавить в корзину
-          </button>
-          <button
+          {product.additionalInfo && (
+            <p className={styles.additionalInfo}>{product.additionalInfo}</p>
+          )}
+          <div className={styles.buttonGroup}>
+            <button
+              onClick={handleAddToCart}
+              className={styles.addToCartButton}
+            >
+              Добавить в корзину
+            </button>
+            <button
               onClick={handleOpenConstructor}
-              className="bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600"
+              className={styles.constructorButton}
             >
               Шаблон в конструкторе
             </button>
+          </div>
         </div>
       </div>
     </div>

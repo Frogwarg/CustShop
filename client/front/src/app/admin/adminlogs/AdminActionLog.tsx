@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import authService from "../../services/authService";
+import useDebounce from '../../utils/useDebounce';
 import styles from "./AdminActionLog.module.css";
 
 interface AdminActionLog {
@@ -31,16 +32,19 @@ const AdminActionLog: React.FC = () => {
   const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
+  const debouncedActionType = useDebounce(actionType, 500);
+  const debouncedEntityType = useDebounce(entityType, 500);
+
   useEffect(() => {
     fetchLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [actionType, entityType, startDate, endDate, page]);
+  }, [debouncedActionType, debouncedEntityType, startDate, endDate, page]);
 
   const fetchLogs = async () => {
     try {
       const queryParams = new URLSearchParams({
-        ...(actionType && { actionType }),
-        ...(entityType && { entityType }),
+        ...(debouncedActionType && { actionType: debouncedActionType }),
+        ...(debouncedEntityType && { entityType: debouncedEntityType }),
         ...(startDate && { startDate }),
         ...(endDate && { endDate }),
         page: page.toString(),
@@ -51,19 +55,19 @@ const AdminActionLog: React.FC = () => {
         "get",
         `/admin/action-logs?${queryParams.toString()}`
       );
-      if (response){
+      if (response) {
         response.logs.forEach((log) => {
-            if (log.details && typeof log.details === "string") {
-                try {
-                    log.details = JSON.parse(log.details);
-                } catch {
-                    log.details = log.details;
-                }
+          if (log.details && typeof log.details === "string") {
+            try {
+              log.details = JSON.parse(log.details);
+            } catch {
+              log.details = log.details;
             }
+          }
         });
       }
       setLogs(response?.logs || []);
-      const totalCount = Math.ceil((response?.totalCount || 0) / pageSize)
+      const totalCount = Math.ceil((response?.totalCount || 0) / pageSize);
       setTotalPages(totalCount != 0 ? totalCount : 1);
     } catch (error) {
       toast.error("Ошибка загрузки логов");

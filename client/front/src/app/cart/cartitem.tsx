@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import styles from './styles.module.css';
 
 interface CartItemProps {
     item: {
@@ -20,39 +21,53 @@ interface CartItemProps {
 const CartItem = React.memo(
     ({ item, onRemove, onEdit, onQuantityChange, onShare }: CartItemProps) => {
         return (
-            <div>
+            <div className={styles.cartItem}>
                 <Image
                     src={item.design.previewUrl || '/placeholder.png'}
                     alt={`Дизайн ${item.design.name || ''}`}
                     width={100}
                     height={100}
+                    className={styles.itemImage}
                 />
-                <div>
-                    
-                    <span> Количество: 
+                <div className={styles.itemDetails}>
+                    <h3 className={styles.itemName}>{item.design.name}</h3>
+                    <div className={styles.quantityControl}>
+                        <span>Количество:</span>
                         <button
                             onClick={() => onQuantityChange(item.design.id, item.quantity - 1)}
                             disabled={item.quantity <= 1}
+                            className={styles.quantityButton}
                         >
                             -
                         </button>
-                        {item.quantity}
-                        <button onClick={() => onQuantityChange(item.design.id, item.quantity + 1)}>
+                        <span>{item.quantity}</span>
+                        <button
+                            onClick={() => onQuantityChange(item.design.id, item.quantity + 1)}
+                            className={styles.quantityButton}
+                        >
                             +
                         </button>
-                    </span>
+                    </div>
+                    <div className={styles.itemPrice}>Цена: {item.price} руб.</div>
+                    <div className={styles.itemTotal}>Сумма: {item.price * item.quantity} руб.</div>
+                    <div className={styles.itemActions}>
+                        <button onClick={() => onEdit(item.design.id)} className={styles.actionButton}>
+                            Редактировать дизайн
+                        </button>
+                        <button onClick={() => onShare(item.design.id)} className={styles.actionButton}>
+                            Поделиться товаром
+                        </button>
+                        <button onClick={() => onRemove(item.design.id)} className={styles.actionButton}>
+                            Удалить товар
+                        </button>
+                    </div>
                 </div>
-                <div>Цена: {item.price} руб.</div>
-                <div>Сумма: {item.price * item.quantity} руб.</div>
-                <button onClick={() => onEdit(item.design.id)}>Редактировать дизайн</button>
-                <button onClick={() => onRemove(item.design.id)}>Удалить товар</button>
-                <button onClick={() => onShare(item.design.id)}>Поделиться товаром</button>
             </div>
         );
     },
     (prevProps, nextProps) =>
         prevProps.item.quantity === nextProps.item.quantity &&
-        prevProps.item.design.id === nextProps.item.design.id // Сравниваем только нужные пропсы
+        prevProps.item.design.id === nextProps.item.design.id
 );
 
 CartItem.displayName = 'CartItem';

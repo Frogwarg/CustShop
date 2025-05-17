@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import authService from "../../services/authService";
+import useDebounce from "../../utils/useDebounce";
 import styles from "./OrderManagement.module.css";
 import Image from "next/image";
 
@@ -59,20 +60,23 @@ const OrderManagement: React.FC = () => {
   const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
+  const debouncedSearch = useDebounce(search, 500);
+  const debouncedCustomerName = useDebounce(customerName, 500);
+
   useEffect(() => {
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, status, paymentStatus, startDate, endDate, customerName, page]);
+  }, [debouncedSearch, status, paymentStatus, startDate, endDate, debouncedCustomerName, page]);
 
   const fetchOrders = async () => {
     try {
       const queryParams = new URLSearchParams({
-        ...(search && { search }),
+        ...(debouncedSearch && { search: debouncedSearch }),
         ...(status && { status }),
         ...(paymentStatus && { paymentStatus }),
         ...(startDate && { startDate }),
         ...(endDate && { endDate }),
-        ...(customerName && { customerName }),
+        ...(debouncedCustomerName && { customerName: debouncedCustomerName }),
         page: page.toString(),
         pageSize: pageSize.toString(),
       });
@@ -82,7 +86,7 @@ const OrderManagement: React.FC = () => {
         `/admin/orders?${queryParams.toString()}`
       );
       setOrders(response?.orders || []);
-      const totalCount = Math.ceil((response?.totalCount || 0) / pageSize)
+      const totalCount = Math.ceil((response?.totalCount || 0) / pageSize);
       setTotalPages(totalCount != 0 ? totalCount : 1);
     } catch (error) {
       toast.error("Ошибка загрузки заказов");

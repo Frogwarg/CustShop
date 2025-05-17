@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import authService from "../../services/authService";
+import useDebounce from "../../utils/useDebounce";
 import styles from "./DesignManagement.module.css";
 import Image from "next/image";
 import Link from "next/link";
@@ -36,17 +37,20 @@ const DesignManagement: React.FC = () => {
   const [editDesign, setEditDesign] = useState<Design | null>(null);
   const router = useRouter();
 
+  const debouncedSearch = useDebounce(search, 500);
+  const debouncedUserId = useDebounce(userId, 500);
+
   useEffect(() => {
     fetchDesigns();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, moderationStatus, userId, page]);
+  }, [debouncedSearch, moderationStatus, debouncedUserId, page]);
 
   const fetchDesigns = async () => {
     try {
       const queryParams = new URLSearchParams({
-        ...(search && { search }),
+        ...(debouncedSearch && { search: debouncedSearch }),
         ...(moderationStatus && { moderationStatus }),
-        ...(userId && { userId }),
+        ...(debouncedUserId && { userId: debouncedUserId }),
         page: page.toString(),
         pageSize: pageSize.toString(),
       });
@@ -56,7 +60,7 @@ const DesignManagement: React.FC = () => {
         `/admin/designs?${queryParams.toString()}`
       );
       setDesigns(response?.designs || []);
-      const totalCount = Math.ceil((response?.totalCount || 0) / pageSize)
+      const totalCount = Math.ceil((response?.totalCount || 0) / pageSize);
       setTotalPages(totalCount != 0 ? totalCount : 1);
     } catch (error) {
       toast.error("Ошибка загрузки дизайнов");

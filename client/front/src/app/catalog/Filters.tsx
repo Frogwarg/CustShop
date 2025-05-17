@@ -1,41 +1,37 @@
 'use client';
 import { useState } from 'react';
+import styles from './styles.module.css';
 
-const Filters = ({ onFilterChange }: {onFilterChange: (filters: { tags: string; productType: string }) => void}) => {
-  const [tags, setTags] = useState('');
+const Filters = ({ onFilterChange }: { onFilterChange: (filters: { search: string; productType: string }) => void }) => {
+  const [search, setSearch] = useState('');
   const [productType, setProductType] = useState('');
-
   const productTypes = ['shirt', 'Mug', 'Pillow'];
 
-const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onFilterChange({ tags, productType });
-};
+    onFilterChange({ search, productType });
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-6 flex flex-col md:flex-row gap-4">
-      <div className="flex-1">
-        <label htmlFor="tags" className="block text-sm font-medium">
-          Теги (через запятую)
-        </label>
+    <form onSubmit={handleSubmit} className={styles.topPanel}>
+      <div className={styles.formField}>
+        <label htmlFor="search" className={styles.label}>Поиск по названию</label>
         <input
           type="text"
-          id="tags"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-          placeholder="funny, custom"
+          id="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Введите название"
+          className={styles.input}
         />
       </div>
-      <div className="flex-1">
-        <label htmlFor="productType" className="block text-sm font-medium">
-          Тип продукта
-        </label>
+      <div className={styles.formField}>
+        <label htmlFor="productType" className={styles.label}>Тип продукта</label>
         <select
           id="productType"
           value={productType}
           onChange={(e) => setProductType(e.target.value)}
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+          className={styles.select}
         >
           <option value="">Все</option>
           {productTypes.map((type) => (
@@ -45,12 +41,7 @@ const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
           ))}
         </select>
       </div>
-      <button
-        type="submit"
-        className="mt-6 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-      >
-        Применить
-      </button>
+      <button type="submit" className={styles.submitButton}>Применить</button>
     </form>
   );
 };
