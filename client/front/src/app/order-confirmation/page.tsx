@@ -1,6 +1,8 @@
+// app/order-confirmation/page.tsx
 'use client';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import Image from 'next/image';
 import styles from '../checkout/Checkout.module.css';
 import authService from '../services/authService';
@@ -13,7 +15,6 @@ interface Address {
   country: string;
 }
 
-// Интерфейс для элемента заказа
 interface OrderItem {
   designId: string;
   previewUrl: string;
@@ -27,12 +28,12 @@ interface Order {
   orderItems: OrderItem[];
   totalAmount: number;
   discountAmount: number;
-  deliveryMethod: 'Delivery' | 'Pickup'; // Предполагаем два возможных значения
-  address?: Address; // Опционально, так как адрес есть только при deliveryMethod === 'Delivery'
-  orderComment?: string; // Опционально, так как может отсутствовать
+  deliveryMethod: 'Delivery' | 'Pickup';
+  address?: Address;
+  orderComment?: string;
 }
 
-const OrderConfirmationPage = () => {
+function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
   const [order, setOrder] = useState<Order | null>(null);
@@ -43,7 +44,6 @@ const OrderConfirmationPage = () => {
     if (orderId) {
       const fetchOrder = async () => {
         try {
-          // const response = await axios.get(`/api/order/${orderId}`);
           const response = await authService.axiosWithRefresh<Order>('get', `/order/${orderId}`);
           setOrder(response);
         } catch (err: unknown) {
@@ -103,6 +103,12 @@ const OrderConfirmationPage = () => {
       </div>
     </div>
   );
-};
+}
 
-export default OrderConfirmationPage;
+export default function OrderConfirmationPage() {
+  return (
+    <Suspense fallback={<p>Загрузка...</p>}>
+      <OrderConfirmationContent />
+    </Suspense>
+  );
+}

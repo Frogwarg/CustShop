@@ -3,6 +3,7 @@ import { fabric } from 'fabric';
 import Image from 'next/image';
 import { Layer } from './Layers/useLayers';
 import { createFilterByName } from '../utils/lib';
+import styles from './constructor.module.css';
 
 const TabbedControls = ({ selectedObject, onUpdateObject }: { selectedObject: fabric.Object | null, onUpdateObject: (obj: Partial</*fabric.Text*/Layer> ) => void }) => {
     const [activeTab, setActiveTab] = useState<'product' | 'object'>('product');
@@ -146,18 +147,22 @@ const TabbedControls = ({ selectedObject, onUpdateObject }: { selectedObject: fa
     };
 
     return (
-        <div>
+        <div className={styles.constructorFormGroup}>
             {/* Таб переключения */}
-            <div style={{ display: 'flex', marginBottom: '10px' }}>
+            <div className={styles.tabControls}>
                 <button 
-                    onClick={() => setActiveTab('product')} 
-                    style={{ flex: 1, backgroundColor: activeTab === 'product' ? '#ddd' : '#fff' }}
+                    className={`${styles.tabButton} ${
+                        activeTab === 'product' ? styles.tabButtonActive : ''
+                    }`}
+                    onClick={() => setActiveTab('product')}
                 >
                     Продукт
                 </button>
                 <button 
-                    onClick={() => setActiveTab('object')} 
-                    style={{ flex: 1, backgroundColor: activeTab === 'object' ? '#ddd' : '#fff' }}
+                    className={`${styles.tabButton} ${
+                        activeTab === 'object' ? styles.tabButtonActive : ''
+                    }`}
+                    onClick={() => setActiveTab('object')}
                 >
                     Объект
                 </button>
@@ -166,59 +171,93 @@ const TabbedControls = ({ selectedObject, onUpdateObject }: { selectedObject: fa
             {/* Секции вкладок */}
             {activeTab === 'product' && (
                 <div>
-
                     <h3>Настройки товара</h3>
-                    <label>
+                    <div className={styles.constructorFormGroup}>
+                        <label className={styles.constructorLabel}>
                         Цвет:
                         <input 
                             type="color" 
                             value={selectedColor} 
-                            onChange={(e) => setSelectedColor(e.target.value)} 
+                            onChange={(e) => setSelectedColor(e.target.value)}
+                            className={styles.constructorColorInput}
                         />
-                    </label>
-                    <label>
+                        </label>
+                    </div>
+                    <div className={styles.constructorFormGroup}>
+                        <label className={styles.constructorLabel}>
                         Размер:
-                        <select value={selectedSize} onChange={(e) => setSelectedSize(e.target.value)}>
+                        <select 
+                            value={selectedSize} 
+                            onChange={(e) => setSelectedSize(e.target.value)}
+                            className={styles.constructorSelect}
+                        >
                             <option value="S">S</option>
                             <option value="M">M</option>
                             <option value="L">L</option>
                             <option value="XL">XL</option>
                         </select>
-                    </label>
+                        </label>
+                    </div>
                 </div>
             )}
 
             {activeTab === 'object' && selectedObject && (
                 <div>
-                    <h3>Настройки объекта</h3>
+                    <h3 className={styles.constructorSubtitle}>Настройки объекта</h3>
                     {/* Общие кнопки */}
-                    <button onClick={handleVerticalAlign}>Отобразить по вертикали</button>
-                    <button onClick={handleHorizontalAlign}>Отобразить по горизонтали</button>
+                    <div className={styles.constructorFormGroup}>
+                        <button 
+                            onClick={handleVerticalAlign}
+                            className={styles.constructorButton}
+                        >
+                            Отобразить по вертикали
+                        </button>
+                        <button 
+                            onClick={handleHorizontalAlign}
+                            className={styles.constructorButton}
+                        >
+                            Отобразить по горизонтали
+                        </button>
+                    </div>
 
                     {selectedObject.type === 'image' && (
                         <>
-                            <label>Фильтры:</label>
-                            <div className="filter-panel" style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+                            <div className={styles.constructorFormGroup}>
+                                <label className={styles.constructorLabel}>Фильтры:</label>
+                                <div className={styles.filterPanel}>
                                 {filterOptions.map((filter) => (
-                                    <div key={filter.name} onClick={() => applyFilter(filter.name, filter.options)} style={{ cursor: 'pointer' }}>
-                                        <Image
-                                            src={filter.preview}
-                                            alt={`Filter preview: ${filter.name}`}
-                                            width={80}
-                                            height={80}
-                                            style={{
-                                                border: selectedFilter?.includes(filter.name) ? '2px solid blue' : '1px solid gray',
-                                                display: 'block',
-                                            }}
-                                        />
-                                        <div style={{ textAlign: 'center', fontSize: 12 }}>{filter.name}</div>
+                                    <div 
+                                    key={filter.name} 
+                                    onClick={() => applyFilter(filter.name, filter.options)} 
+                                    className={styles.filterItem}
+                                    >
+                                    <Image
+                                        src={filter.preview}
+                                        alt={`Filter preview: ${filter.name}`}
+                                        width={80}
+                                        height={80}
+                                        className={`${styles.filterPreview} ${
+                                        selectedFilter?.includes(filter.name) ? styles.filterPreviewActive : ''
+                                        }`}
+                                    />
+                                    <div className={styles.filterName}>{filter.name}</div>
                                     </div>
                                 ))}
+                                </div>
                             </div>
-                            <button onClick={resetFilters} style={{ marginTop: 10 }}>Сбросить фильтры</button>
+                            <div className={styles.constructorFormGroup}>
+                                <button 
+                                onClick={resetFilters} 
+                                className={styles.constructorButton}
+                                >
+                                Сбросить фильтры
+                                </button>
+                            </div>
                             {selectedFilter?.includes('Brightness') && (
-                                <div style={{ marginTop: 10 }}>
-                                    <label>Уровень яркости: {brightnessValue}</label>
+                                <div className={styles.constructorFormGroup}>
+                                    <label className={styles.constructorLabel}>
+                                        Уровень яркости: {brightnessValue.toFixed(1)}
+                                    </label>
                                     <input
                                         type="range"
                                         min={-1}
@@ -226,10 +265,11 @@ const TabbedControls = ({ selectedObject, onUpdateObject }: { selectedObject: fa
                                         step={0.1}
                                         value={brightnessValue}
                                         onChange={(e) => {
-                                            const newValue = parseFloat(e.target.value);
-                                            setBrightnessValue(newValue);
-                                            updateBrightnessFilter(newValue);
+                                        const newValue = parseFloat(e.target.value);
+                                        setBrightnessValue(newValue);
+                                        updateBrightnessFilter(newValue);
                                         }}
+                                        className={styles.constructorInput}
                                     />
                                 </div>
                             )}
@@ -238,39 +278,55 @@ const TabbedControls = ({ selectedObject, onUpdateObject }: { selectedObject: fa
                     {selectedObject.type === 'text' && (
                         <>  
                             {/* Настройки текста */}
-                            <label>
+                            <div className={styles.constructorFormGroup}>
+                                <label className={styles.constructorLabel}>
                                 Изменить текст:
                                 <input 
                                     type="text" 
                                     value={objectText}
                                     onChange={(e) => {
-                                        setObjectText(e.target.value);
-                                        onUpdateObject({ text: e.target.value });
-                                    }} 
+                                    setObjectText(e.target.value);
+                                    onUpdateObject({ text: e.target.value });
+                                    }}
+                                    className={styles.constructorInput}
                                 />
-                            </label>
-                            <label>
+                                </label>
+                            </div>
+
+                            <div className={styles.constructorFormGroup}>
+                                <label className={styles.constructorLabel}>
                                 Шрифт:
-                                <select value={objectFont} onChange={(e) => {
-                                                setObjectFont(e.target.value);
-                                                onUpdateObject({ fontFamily: e.target.value });
-                                            }}>
+                                <select 
+                                    value={objectFont} 
+                                    onChange={(e) => {
+                                    setObjectFont(e.target.value);
+                                    onUpdateObject({ fontFamily: e.target.value });
+                                    }}
+                                    className={styles.constructorSelect}
+                                >
                                     <option value="Arial">Arial</option>
                                     <option value="Verdana">Verdana</option>
                                     <option value="Times New Roman">Times New Roman</option>
+                                    <option value="Courier New">Courier New</option>
+                                    <option value="Georgia">Georgia</option>
                                 </select>
-                            </label>
-                            <label>
+                                </label>
+                            </div>
+
+                            <div className={styles.constructorFormGroup}>
+                                <label className={styles.constructorLabel}>
                                 Цвет текста:
                                 <input 
                                     type="color" 
                                     value={objectColor} 
                                     onChange={(e) => {
-                                        setObjectColor(e.target.value);
-                                        onUpdateObject({ fill: e.target.value });
+                                    setObjectColor(e.target.value);
+                                    onUpdateObject({ fill: e.target.value });
                                     }}
+                                    className={styles.constructorColorInput}
                                 />
-                            </label>
+                                </label>
+                            </div>
                         </>
                     )}
                 </div>

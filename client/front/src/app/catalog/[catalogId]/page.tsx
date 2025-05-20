@@ -19,7 +19,7 @@ const ProductPage = () => {
     price: number;
     discountedPrice?: number;
     sizes: string[];
-    tags: string;
+    tags: string[];
     authorName: string;
     materials: string[];
     additionalInfo?: string;
@@ -119,7 +119,7 @@ const ProductPage = () => {
               <span className={styles.price}>{product.price} ₽</span>
             )}
           </div>
-          <p className={styles.productInfo}>Теги: {product.tags}</p>
+          <p className={styles.productInfo}>Теги: {product.tags.join(', ')}</p>
           <p className={styles.productInfo}>Автор: {product.authorName}</p>
           <p className={styles.productInfo}>Тип продукта: {product.productType}</p>
           <div className={styles.inputGroup}>

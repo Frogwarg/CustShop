@@ -32,7 +32,7 @@ const authService = {
         },
         withCredentials: true, // Отправляем куки
     });
-    if (response.data.token) {
+    if (response.data.token && typeof window !== 'undefined') {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('refreshToken', response.data.refreshToken);
     }
@@ -46,7 +46,7 @@ const authService = {
             },
             withCredentials: true, // Отправляем куки
         });
-    if (response.data.token) {
+    if (response.data.token && typeof window !== 'undefined') {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('refreshToken', response.data.refreshToken);
     }
@@ -66,15 +66,18 @@ const authService = {
   },
 
   async logout() {
+    if (typeof window === 'undefined') return;
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
   },
   setToken(token: string, expiration: string) {
+    if (typeof window === 'undefined') return;
     localStorage.setItem('token', token);
     localStorage.setItem('tokenExpiration', expiration);
   },
 
   getToken(): string | null {
+    if (typeof window === 'undefined') return null;
     const token = localStorage.getItem('token');
     const expiration = localStorage.getItem('tokenExpiration');
     if (token && expiration && new Date(expiration) > new Date()) {
@@ -101,6 +104,7 @@ const authService = {
     }
   },
   async refreshToken(): Promise<AuthResponse | null> {
+    if (typeof window === 'undefined') return null;
     const refreshToken = localStorage.getItem("refreshToken");
     if (!refreshToken) return null;
 
@@ -112,7 +116,7 @@ const authService = {
         withCredentials: true,
       });
 
-      if (response.data.token) {
+      if (response.data.token && typeof window !== 'undefined') {
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("refreshToken", response.data.refreshToken);
         return response.data;

@@ -151,7 +151,7 @@
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  height: 400px;
+  height: 450px;
   justify-content: space-between;
   transition: box-shadow 0.2s ease-in-out;
   text-decoration: none;
@@ -181,27 +181,26 @@
   line-clamp: 1;
   -webkit-box-orient: vertical;
   position: relative;
-  background-image: linear-gradient(to bottom, #1a202c 70%, transparent);
+  /* background-image: linear-gradient(to bottom, #1a202c 70%, transparent);
   -webkit-background-clip: text;
   background-clip: text;
-  color: transparent;
+  color: transparent; */
 }
 
 .productDescription {
   font-size: 0.875rem;
   color: #718096;
   margin-bottom: 0.5rem;
-  overflow: hidden;
   text-overflow: ellipsis;
   display: block;
   -webkit-line-clamp: 1;
   line-clamp: 1;
   -webkit-box-orient: vertical;
   position: relative;
-  /* background-image: linear-gradient(to bottom, #718096 70%, transparent);
+  background-image: linear-gradient(to bottom, #718096 70%, transparent);
   -webkit-background-clip: text;
   background-clip: text;
-  color: transparent; */
+  color: transparent;
 }
 
 .productType {
@@ -212,7 +211,8 @@
 
 .tagsContainer {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap:nowrap;
+  overflow: hidden;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
 }
@@ -220,6 +220,7 @@
 .tag {
   background-color: #e2e8f0;
   color: #4a5568;
+  text-wrap: nowrap;
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   font-size: 0.75rem;

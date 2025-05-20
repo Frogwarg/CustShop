@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import styles from '../constructor.module.css';
 
 interface Layer {
     id: number | string;
@@ -20,41 +21,52 @@ interface LayersPanelProps {
 
 const LayersPanel: React.FC<LayersPanelProps> = ({ layers, selectedLayerId, onSelectLayer, onMoveLayer, onRemoveLayer, onToggleVisibility }) => {
     return (
-        <div style={{ width: '200px', marginRight: '20px' }}>
-            <h3>Layers</h3>
+        <div className={styles.layersPanel}>
+            <h3>Слои</h3>
             {layers.slice().reverse().map((layer) => (
                 <div
                     key={layer.id}
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '5px',
-                        backgroundColor: layer.id === selectedLayerId ? '#e0e0e0' : 'transparent',
-                        opacity: layer.visible === false ? 0.5 : 1
-                    }}
+                    className={`${styles.layerItem} ${
+                        layer.id === selectedLayerId ? styles.layerItemActive : ''
+                    }`}
                     onClick={() => onSelectLayer(layer.id)}
                 >
                     {layer.type === 'image' ? (
                         <div>
-                            <Image src={layer.url as string} alt="layer thumbnail" width={50} height={50} style={{ objectFit: 'cover' }} />
+                            <Image src={layer.url as string} alt="layer thumbnail" width={80} height={80} className={styles.layerThumbnail}  />
                             <span>Изображение</span>
                         </div>
                     ) : (
                         <span>{`Текст: "${layer.text}"`}</span>
                     )}
-                    <div>
-                        <button onClick={(e) => { e.stopPropagation(); onMoveLayer(layers.indexOf(layer), 1); }}>
-                            Up
+                    <div className={styles.layerControls}>
+                        <button 
+                            className={styles.layerControlButton}
+                            onClick={(e) => { e.stopPropagation(); onMoveLayer(layers.indexOf(layer), 1); }}
+                            title="Переместить вверх"
+                        >
+                            ↑
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); onMoveLayer(layers.indexOf(layer), -1); }}>
-                            Down
+                        <button 
+                            className={styles.layerControlButton}
+                            onClick={(e) => { e.stopPropagation(); onMoveLayer(layers.indexOf(layer), -1); }}
+                            title="Переместить вниз"
+                        >
+                            ↓
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); onToggleVisibility(layer.id); }}>
-                            {layer.visible === false ? 'Show' : 'Hide'}
+                        <button 
+                            className={styles.layerControlButton}
+                            onClick={(e) => { e.stopPropagation(); onToggleVisibility(layer.id); }}
+                            title={layer.visible === false ? 'Показать' : 'Скрыть'}
+                        >
+                            {layer.visible === false ? '👁️' : '👁️'}
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); onRemoveLayer(layer.id); }}>
-                            Delete
+                        <button 
+                            className={styles.layerControlButton}
+                            onClick={(e) => { e.stopPropagation(); onRemoveLayer(layer.id); }}
+                            title="Удалить"
+                        >
+                            ×
                         </button>
                     </div>
                 </div>

@@ -5,6 +5,7 @@ import CryptoJS from 'crypto-js';
 import axios from 'axios';
 
 import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense } from 'react';
 import authService from '../services/authService';
 import { useAuth } from '../contexts/AuthContext';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
@@ -14,12 +15,14 @@ import { saveStateToIndexedDB, getStateFromIndexedDB, clearStateFromIndexedDB } 
 import { createFilterByName } from '../utils/lib';
 import {products} from './ProductModal/productModal';
 
+import styles from './constructor.module.css';
+
 import ProductModal from './ProductModal/productModal';
 import TabbedControls from './tabbedControl';
 import LayersPanel from './Layers/LayersPanel';
 import CatalogAddModal from './CatalogAddModal/CatalogAddModal';
 
-const DesignProduct = () => {
+function DesignConstructor () {
     const searchParams = useSearchParams();
     const designId = searchParams.get('designId');
 
@@ -29,6 +32,9 @@ const DesignProduct = () => {
     useEffect(() => {
         setCanShowCatalogButton(hasRole('Moderator') || hasRole('Admin'));
     }, [hasRole]);
+
+    const [isCanvasLoading, setIsCanvasLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     
     const [designAuthorId, setDesignAuthorId] = useState<string | null>(null);
 
@@ -62,117 +68,171 @@ const DesignProduct = () => {
     } = useLayers(canvasRef);
 
     useEffect(() => {
-    const initializeCanvasAndLayers = async () => {
-        if (hasInitialized.current) return;
-        hasInitialized.current = true;
-        let savedState: string | null = null;
-        let remoteState: { designData?: string; productType?: string } = {};
-        setLayers([]);
+        try {
+            const initializeCanvasAndLayers = async () => {
+                if (hasInitialized.current) return;
+                hasInitialized.current = true;
+                let savedState: string | null = null;
+                let remoteState: { designData?: string; productType?: string } = {};
+                setLayers([]);
 
-        if (designId){
-            try {
-                const remoteDesign = await authService.axiosWithRefresh<{ designData?: string; userId?: string }>('get', `/Design/${designId}`);
-                if (remoteDesign && remoteDesign.designData) {
-                    remoteState = remoteDesign;
-                    savedState = remoteDesign.designData;
-                    setDesignAuthorId(remoteDesign.userId || null);
-                } else {
-                    console.warn('No design data found for designId:', designId);
+                if (designId){
+                    try {
+                        const remoteDesign = await authService.axiosWithRefresh<{ designData?: string; userId?: string }>('get', `/Design/${designId}`);
+                        if (remoteDesign && remoteDesign.designData) {
+                            remoteState = remoteDesign;
+                            savedState = remoteDesign.designData;
+                            setDesignAuthorId(remoteDesign.userId || null);
+                        } else {
+                            console.warn('No design data found for designId:', designId);
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch design from remote:', error);
+                        toast.error('Failed to load design from server. Loading local state.');
+                    }
+                } 
+                if (!savedState) {
+                    savedState = await getStateFromIndexedDB();
                 }
-            } catch (error) {
-                console.error('Failed to fetch design from remote:', error);
-                toast.error('Failed to load design from server. Loading local state.');
-            }
-        } 
-        if (!savedState) {
-            savedState = await getStateFromIndexedDB();
-        }
 
-        if (!savedState) return;
+                if (!savedState) return;
 
-        const {
-            selectedProduct: savedProduct,
-            layers: savedLayers,
-            selectedLayerId: savedLayerId,
-            currentText: savedText,
-            canvasSize: savedSize,
-        } = JSON.parse(savedState);
+                const {
+                    selectedProduct: savedProduct,
+                    layers: savedLayers,
+                    selectedLayerId: savedLayerId,
+                    currentText: savedText,
+                    canvasSize: savedSize,
+                } = JSON.parse(savedState);
 
-        // Устанавливаем состояния
-        const restoredProduct = savedProduct ?? (
-            remoteState ? 
-                {id: remoteState.productType, type: products.find(p => p.id === remoteState.productType)?.type || 'regular'} : 
-                {id: 'shirt', type: '3D'}
-        );
+                // Устанавливаем состояния
+                const restoredProduct = savedProduct ?? (
+                    remoteState ? 
+                        {id: remoteState.productType, type: products.find(p => p.id === remoteState.productType)?.type || 'regular'} : 
+                        {id: 'shirt', type: '3D'}
+                );
 
-        setSelectedProduct(restoredProduct);
-        setSelectedLayerId(savedLayerId);
-        setCurrentText(savedText ?? 'Your Text Here');
-        setCanvasSize(savedSize);
+                setSelectedProduct(restoredProduct);
+                setSelectedLayerId(savedLayerId);
+                setCurrentText(savedText ?? 'Your Text Here');
+                setCanvasSize(savedSize);
 
-        // 1. Создаём канвас
-        if (!canvasRef.current) {
-            const canvas = new fabric.Canvas('canvas', {
-                width: savedSize.width,
-                height: savedSize.height,
-                backgroundColor: backgroundColor,
-                selection: false,
-                controlsAboveOverlay: true,
-            });
-            canvasRef.current = canvas;
-        }
+                if (!canvasRef.current) {
+                    const canvas = new fabric.Canvas('canvas', {
+                        width: savedSize.width,
+                        height: savedSize.height,
+                        backgroundColor: backgroundColor,
+                        selection: false,
+                        controlsAboveOverlay: true,
+                    });
+                    canvasRef.current = canvas;
+                }
 
-        // 2. Применяем продукт
-        await new Promise<void>((resolve) => {
-            handleProductSelect(restoredProduct.id, restoredProduct.type);
-            setTimeout(() => resolve(), 500); // Даем время на загрузку маски
-        });
 
-        const canvas = canvasRef.current!;
-
-        // 3. Восстанавливаем слои
-        for (const layer of savedLayers) {
-            if (layer.type === 'image' && typeof layer.url === 'string') {
-                const img = new window.Image();
-                img.src = layer.url;
                 await new Promise<void>((resolve) => {
-                    img.onload = () => {
-                        const fabricImage = new fabric.Image(img, {
+                    handleProductSelect(restoredProduct.id, restoredProduct.type);
+                    setTimeout(() => resolve(), 500); // Даем время на загрузку маски
+                });
+
+                const canvas = canvasRef.current!;
+
+                for (const layer of savedLayers) {
+                    if (layer.type === 'image' && typeof layer.url === 'string') {
+                        const img = new window.Image();
+                        img.src = layer.url;
+                        await new Promise<void>((resolve) => {
+                            img.onload = () => {
+                                const fabricImage = new fabric.Image(img, {
+                                    left: layer.x,
+                                    top: layer.y,
+                                    scaleX: layer.width / img.width,
+                                    scaleY: layer.height / img.height,
+                                    flipX: layer.flipX,
+                                    flipY: layer.flipY,
+                                    angle: layer.angle || 0,
+                                    data: { id: layer.id },
+                                    visible: layer.visible
+                                });
+
+                                // Применяем фильтры
+                                if (Array.isArray(layer.filters)) {
+                                    const fabricFilters: fabric.IBaseFilter[] = layer.filters.map((f: SerializedFabricFilter) => {
+                                        const filterMap: { [key: string]: new (options?: unknown) => fabric.IBaseFilter } = {
+                                            Grayscale: fabric.Image.filters.Grayscale as unknown as new (options?: unknown) => fabric.IBaseFilter,
+                                            Sepia: fabric.Image.filters.Sepia as unknown as new (options?: unknown) => fabric.IBaseFilter,
+                                            Invert: fabric.Image.filters.Invert as unknown as new (options?: unknown) => fabric.IBaseFilter,
+                                            Brightness: fabric.Image.filters.Brightness as unknown as new (options?: unknown) => fabric.IBaseFilter
+                                        };
+                                        const FilterClass = filterMap[f.name];
+                                        if (!FilterClass) return null;
+                                        return new FilterClass(f.options);
+                                    }).filter(Boolean) as fabric.IBaseFilter[];
+
+                                    fabricImage.filters = fabricFilters;
+                                    fabricImage.applyFilters();
+                                }
+
+                                // Применяем clipPath
+                                const product = products.find(p => p.id === restoredProduct.id);
+                                if (product?.type === '3D' && canvas.overlayImage) {
+                                    const overlayLeft = (canvas.width! - canvas.overlayImage.width!) / 2;
+                                    const overlayTop = (canvas.height! - canvas.overlayImage.height!) / 2;
+                                    fabricImage.clipPath = new fabric.Rect({
+                                        left: overlayLeft + 1,
+                                        top: overlayTop + 1,
+                                        width: canvas.overlayImage.width! - 3,
+                                        height: canvas.overlayImage.height! - 3,
+                                        absolutePositioned: true,
+                                        visible: layer.visible
+                                    });
+                                } else if (product?.type === 'regular' && product.clipArea && canvas.backgroundImage) {
+                                    const bgImg = canvas.backgroundImage as fabric.Image;
+                                    const bgLeft = bgImg.left || 0;
+                                    const bgTop = bgImg.top || 0;
+                                    const clipWidth = bgImg.width! * product.clipArea.width;
+                                    const clipHeight = bgImg.height! * product.clipArea.height;
+                                    const clipLeft = bgLeft + (bgImg.width! * product.clipArea.x);
+                                    const clipTop = bgTop + (bgImg.height! * product.clipArea.y);
+                                    fabricImage.clipPath = new fabric.Rect({
+                                        left: clipLeft,
+                                        top: clipTop,
+                                        width: clipWidth,
+                                        height: clipHeight,
+                                        absolutePositioned: true,
+                                        visible: layer.visible
+                                    });
+                                }
+
+                                canvas.add(fabricImage);
+                                fabricImage.setCoords();      
+                                addLayer(layer);
+                                resolve();
+                            };
+                            img.onerror = () => {
+                                resolve(); // Продолжаем даже в случае ошибки
+                            };
+                        });
+                    } else if (layer.type === 'text' && layer.text) {
+                        const text = new fabric.Text(layer.text, {
                             left: layer.x,
                             top: layer.y,
-                            scaleX: layer.width / img.width,
-                            scaleY: layer.height / img.height,
+                            scaleX: layer.scaleX || 1,
+                            scaleY: layer.scaleY || 1,
                             flipX: layer.flipX,
                             flipY: layer.flipY,
                             angle: layer.angle || 0,
+                            fontSize: layer.fontSize || 30,
                             data: { id: layer.id },
-                            visible: layer.visible
+                            visible: layer.visible,
+                            fill: layer.fill,
+                            fontFamily: layer.fontFamily
                         });
 
-                        // Применяем фильтры
-                        if (Array.isArray(layer.filters)) {
-                            const fabricFilters: fabric.IBaseFilter[] = layer.filters.map((f: SerializedFabricFilter) => {
-                                const filterMap: { [key: string]: new (options?: any) => fabric.IBaseFilter } = {
-                                    Grayscale: fabric.Image.filters.Grayscale,
-                                    Sepia: fabric.Image.filters.Sepia,
-                                    Invert: fabric.Image.filters.Invert,
-                                    Brightness: fabric.Image.filters.Brightness
-                                };
-                                const FilterClass = filterMap[f.name];
-                                if (!FilterClass) return null;
-                                return new FilterClass(f.options);
-                            }).filter(Boolean) as fabric.IBaseFilter[];
-
-                            fabricImage.filters = fabricFilters;
-                            fabricImage.applyFilters();
-                        }
-
-                        // Применяем clipPath
                         const product = products.find(p => p.id === restoredProduct.id);
                         if (product?.type === '3D' && canvas.overlayImage) {
                             const overlayLeft = (canvas.width! - canvas.overlayImage.width!) / 2;
                             const overlayTop = (canvas.height! - canvas.overlayImage.height!) / 2;
-                            fabricImage.clipPath = new fabric.Rect({
+                            text.clipPath = new fabric.Rect({
                                 left: overlayLeft + 1,
                                 top: overlayTop + 1,
                                 width: canvas.overlayImage.width! - 3,
@@ -188,7 +248,7 @@ const DesignProduct = () => {
                             const clipHeight = bgImg.height! * product.clipArea.height;
                             const clipLeft = bgLeft + (bgImg.width! * product.clipArea.x);
                             const clipTop = bgTop + (bgImg.height! * product.clipArea.y);
-                            fabricImage.clipPath = new fabric.Rect({
+                            text.clipPath = new fabric.Rect({
                                 left: clipLeft,
                                 top: clipTop,
                                 width: clipWidth,
@@ -198,80 +258,30 @@ const DesignProduct = () => {
                             });
                         }
 
-                        canvas.add(fabricImage);
-                        fabricImage.setCoords();      
+                        canvas.add(text);
+                        text.setCoords();
                         addLayer(layer);
-                        resolve();
-                    };
-                    img.onerror = () => {
-                        resolve(); // Продолжаем даже в случае ошибки
-                    };
-                });
-            } else if (layer.type === 'text' && layer.text) {
-                const text = new fabric.Text(layer.text, {
-                    left: layer.x,
-                    top: layer.y,
-                    scaleX: layer.scaleX || 1,
-                    scaleY: layer.scaleY || 1,
-                    flipX: layer.flipX,
-                    flipY: layer.flipY,
-                    angle: layer.angle || 0,
-                    fontSize: layer.fontSize || 30,
-                    data: { id: layer.id },
-                    visible: layer.visible,
-                    fill: layer.fill,
-                    fontFamily: layer.fontFamily
-                });
-
-                const product = products.find(p => p.id === restoredProduct.id);
-                if (product?.type === '3D' && canvas.overlayImage) {
-                    const overlayLeft = (canvas.width! - canvas.overlayImage.width!) / 2;
-                    const overlayTop = (canvas.height! - canvas.overlayImage.height!) / 2;
-                    text.clipPath = new fabric.Rect({
-                        left: overlayLeft + 1,
-                        top: overlayTop + 1,
-                        width: canvas.overlayImage.width! - 3,
-                        height: canvas.overlayImage.height! - 3,
-                        absolutePositioned: true,
-                        visible: layer.visible
-                    });
-                } else if (product?.type === 'regular' && product.clipArea && canvas.backgroundImage) {
-                    const bgImg = canvas.backgroundImage as fabric.Image;
-                    const bgLeft = bgImg.left || 0;
-                    const bgTop = bgImg.top || 0;
-                    const clipWidth = bgImg.width! * product.clipArea.width;
-                    const clipHeight = bgImg.height! * product.clipArea.height;
-                    const clipLeft = bgLeft + (bgImg.width! * product.clipArea.x);
-                    const clipTop = bgTop + (bgImg.height! * product.clipArea.y);
-                    text.clipPath = new fabric.Rect({
-                        left: clipLeft,
-                        top: clipTop,
-                        width: clipWidth,
-                        height: clipHeight,
-                        absolutePositioned: true,
-                        visible: layer.visible
-                    });
+                    }
                 }
 
-                canvas.add(text);
-                text.setCoords();
-                addLayer(layer);
-            }
+                canvas.on('mouse:down', (e) => {
+                    if (!e.target) {
+                        setSelectedLayerId(null);
+                        canvas.discardActiveObject().renderAll();
+                    }
+                });
+
+                canvas.renderAll();
+            };
+
+            initializeCanvasAndLayers();
+        } catch (error) {
+            console.error("Ошибка: ", error);
+        } finally {
+            setIsCanvasLoading(false);
         }
-
-        canvas.on('mouse:down', (e) => {
-            if (!e.target) {
-                setSelectedLayerId(null);
-                canvas.discardActiveObject().renderAll();
-            }
-        });
-
-        canvas.renderAll();
-    };
-
-    initializeCanvasAndLayers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [designId]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [designId]);
 
     
     const saveStateToLocalStorage = useCallback(async () => {
@@ -797,6 +807,7 @@ const DesignProduct = () => {
     };
 
     const saveDesign = async (updateExisting: boolean = false) => {
+        setIsSaving(true);
         if (!canvasRef.current) return;
         
         try {
@@ -924,14 +935,16 @@ const DesignProduct = () => {
             }
             console.error('Ошибка:', errorMessage);
             toast.error(`Ошибка: ${errorMessage}`);
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    const getAllObjects = () =>{
-        console.log('Canvas Objects:', canvasRef.current?.getObjects());
-        console.log('Layers:', layers);
-        console.log('selectedProduct: ', selectedProduct);
-    }
+    // const getAllObjects = () =>{
+    //     console.log('Canvas Objects:', canvasRef.current?.getObjects());
+    //     console.log('Layers:', layers);
+    //     console.log('selectedProduct: ', selectedProduct);
+    // }
 
     const resetDesign = async () => {
         if (canvasRef.current) {
@@ -999,6 +1012,7 @@ const DesignProduct = () => {
         }
     }
     async function handleAddToCatalog(data: {name: string; description: string; price: number; tagIds: string[]; moderationStatus: "Approved" | "Rejected";}) {
+        setIsSaving(true);
         if (!canvasRef.current) return;
 
         try {
@@ -1080,70 +1094,143 @@ const DesignProduct = () => {
             } else {
                 toast.error('Ошибка: Неизвестная ошибка');
             }
+        } finally {
+            setIsSaving(false);
         }
     }
     return (
-        <div style={{ display: 'flex', justifyContent:'space-between' }}>
-        
+        <div className={styles.designContainer}>
+            {isSaving && (
+                <div className={styles.globalLoading}>
+                    <div className={styles.globalLoadingSpinner}></div>
+                    <div className={styles.globalLoadingText}>Сохранение...</div>
+                </div>
+            )}
             <ProductModal
                 isOpen={isProductModalOpen}
                 onClose={() => setIsProductModalOpen(false)}
                 onSelectProduct={handleProductSelect}
             />
+            <div className={styles.constructorContent}>
+                <div className={`${styles.constructorSidebar} ${styles.constructorSidebarLeft}`}>
+                    <LayersPanel 
+                        layers={layers}
+                        selectedLayerId={selectedLayerId}
+                        onSelectLayer={handleSelectLayer}
+                        onMoveLayer={moveLayer}
+                        onRemoveLayer={removeLayer}
+                        onToggleVisibility={toggleLayerVisibility} />
+                </div>
 
-            <LayersPanel
-                layers={layers}
-                selectedLayerId={selectedLayerId}
-                onSelectLayer={handleSelectLayer}
-                onMoveLayer={moveLayer}
-                onRemoveLayer={removeLayer}
-                onToggleVisibility={toggleLayerVisibility}
-            />
+                <div className={styles.constructorCanvasArea}>
+                    {isCanvasLoading && (
+                    <div className={styles.canvasLoading}>
+                        <div className={styles.canvasSpinner}></div>
+                        <div className={styles.canvasLoadingText}>Загрузка канваса...</div>
+                    </div>
+                    )}
+                    <canvas id="canvas"></canvas>
+                </div>
 
-            <div>
-                <canvas id="canvas" style={{border: '1px solid black'}}></canvas>
-            </div>
+                <div className={`${styles.constructorSidebar} ${styles.constructorSidebarRight}`}>
+                    <div className={styles.buttonGroup}>
+                        <div className={styles.fileInputWrapper}>
+                            <button className={styles.fileInputButton}>
+                                <span>Добавить изображение</span>
+                            </button>
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                onChange={handleImageUpload}
+                                className={styles.fileInput}
+                                accept="image/*"
+                            />
+                        </div>
 
-            <div>
-                <input type="file" ref={fileInputRef} onChange={handleImageUpload} />
-                <input
-                    type="text"
-                    value={currentText}
-                    onChange={(e) => setCurrentText (e.target.value)}
-                    placeholder="Enter text"
-                />
-                <button onClick={handleAddText}>Добавить текст</button>
-                <button onClick={() => setIsProductModalOpen(true)}>Выбрать товар</button>
-                <button onClick={getAllObjects}>Get All Objects</button>
-                <button onClick={() => saveDesign(false)}>
-                    {designId && !canUpdateDesign() ? 'Добавить в корзину' : 'Сохранить как новый дизайн'}
-                </button>
-                {designId && canUpdateDesign() && (
-                    <button onClick={() => saveDesign(true)}>
-                        Обновить существующий дизайн
-                    </button>
-                )}
-                <button onClick={resetDesign}>Очистить дизайн</button>
-                {designId && (
-                    <button
-                        onClick={() => {
-                            resetDesign();
-                            router.push('/constructor');
-                        }}
-                    >
-                        Новый дизайн
-                    </button>
-                )}
-                {canShowCatalogButton ? (
-                    <button onClick={() => setIsCatalogModalOpen(true)}>
-                    Добавить в каталог
-                    </button>
-                ) : null}
-                <CatalogAddModal isOpen={isCatalogModalOpen} onClose={() => setIsCatalogModalOpen(false)} onSubmit={handleAddToCatalog}/>
-                <TabbedControls  selectedObject={selectedObject} onUpdateObject={handleUpdateObject} />
+                        <button 
+                            onClick={handleAddText}
+                            className={styles.constructorButton}
+                        >
+                            Добавить текст
+                        </button>
+
+                        <input
+                            type="text"
+                            value={currentText}
+                            onChange={(e) => setCurrentText(e.target.value)}
+                            placeholder="Введите текст"
+                            className={styles.textInput}
+                        />
+                        
+                        <button 
+                            onClick={() => setIsProductModalOpen(true)}
+                            className={styles.constructorButton}
+                        >
+                            Выбрать товар
+                        </button>
+                        
+                        {/* <button 
+                            onClick={getAllObjects}
+                            className={styles.constructorButton}
+                        >
+                            Отладка
+                        </button> */}
+                        
+                        <button 
+                            onClick={() => saveDesign(false)}
+                            className={styles.constructorButton}
+                        >
+                            {designId && !canUpdateDesign() ? 'В корзину' : 'Сохранить дизайн'}
+                        </button>
+                        
+                        {designId && canUpdateDesign() && (
+                            <button 
+                                onClick={() => saveDesign(true)}
+                                className={styles.constructorButton}
+                            >
+                                Обновить дизайн
+                            </button>
+                        )}
+                        
+                        <button 
+                            onClick={resetDesign}
+                            className={styles.constructorButton}
+                        >
+                            Очистить
+                        </button>
+                        
+                        {designId && (
+                            <button
+                                onClick={() => {
+                                    resetDesign();
+                                    router.push('/constructor');
+                                }}
+                                className={styles.constructorButton}
+                            >
+                                Новый дизайн
+                            </button>
+                        )}
+                        
+                        {canShowCatalogButton && (
+                            <button 
+                                onClick={() => setIsCatalogModalOpen(true)}
+                                className={styles.constructorButton}
+                            >
+                                Добавить напрямую в каталог
+                            </button>
+                        )}
+                    </div>
+                    <CatalogAddModal isOpen={isCatalogModalOpen} onClose={() => setIsCatalogModalOpen(false)} onSubmit={handleAddToCatalog}/>
+                    <TabbedControls selectedObject={selectedObject} onUpdateObject={handleUpdateObject} />
+                </div>
             </div>
         </div>
     );
 };
-
-export default DesignProduct;
+export default function DesignProduct() {
+    return (
+        <Suspense fallback={<p>Загрузка...</p>}>
+          <DesignConstructor />
+        </Suspense>
+      );
+}

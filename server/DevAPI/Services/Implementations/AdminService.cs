@@ -188,14 +188,22 @@ namespace DevAPI.Services.Implementations
             design.ModerationStatus = request.ModerationStatus;
             design.ModeratorComment = request.ModeratorComment;
 
+            var catalogItem = await _context.CatalogItems.FirstOrDefaultAsync(x => x.DesignId == designId);
             if (design.ModerationStatus == "Approved")
             {
-                var catalogItem = await _context.CatalogItems.FirstOrDefaultAsync(x => x.DesignId == designId);
                 if (catalogItem != null)
                 {
                     _logger.LogInformation("Дизайн привязан к предмету каталога");
                     catalogItem.Name = request.Name;
                     catalogItem.Description = request.Description;
+                }
+            }
+            else
+            {
+                if (catalogItem != null)
+                {
+                    _logger.LogInformation("Удаление элемента каталога, так как дизайн не одобрен");
+                    _context.CatalogItems.Remove(catalogItem);
                 }
             }
 
