@@ -88,9 +88,9 @@ namespace DevAPI.Controllers
         }
 
         [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] string email)
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
-            await _authService.ForgotPasswordAsync(email);
+            await _authService.ForgotPasswordAsync(request.email);
             return Ok();
         }
 
@@ -113,5 +113,9 @@ namespace DevAPI.Controllers
         {
             return Ok(new { message = "Token is valid" });
         }
+    }
+    public class ForgotPasswordRequest
+    {
+        public string email { get; set; }
     }
 }

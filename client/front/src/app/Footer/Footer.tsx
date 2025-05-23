@@ -3,37 +3,43 @@ import "./footer.css";
 
 const Footer = () => {
   return (
-    <footer>
+    <footer className="footer">
         <div className="footer__container">
             <div className="footer__column">
+                <h3 className="footer__title">Навигация</h3>
                 <ul className="footer__ul">
                     <li>
-                        <Link href="/">Главная</Link>
+                        <Link href="/" className="footer__link">Главная</Link>
                     </li>
                     <li>
-                        <Link href="/constructor">Конструктор</Link>
+                        <Link href="/constructor" className="footer__link">Конструктор</Link>
                     </li>
                     <li>
-                        <Link href="/catalog">Каталог</Link>
+                        <Link href="/catalog" className="footer__link">Каталог</Link>
                     </li>
                     <li>
-                        <Link href="/contacts">Контакты</Link>
+                        <Link href="/contacts" className="footer__link">Контакты</Link>
                     </li>
                 </ul>
             </div>
-            <div className="column">
+            <div className="footer__column">
+                <h3 className="footer__title">Контакты</h3>
                 <ul className="footer__ul">
                     <li>
-                        <span>*Адрес*</span>
+                        <span className="footer__text">ул. Примерная, д. 123</span>
                     </li>
                     <li>
-                        <span>*продолжение адреса*</span>
+                        <span className="footer__text">г. Пример, 123456</span>
                     </li>
                     <li>
-                        <span> E-mail: <Link type="e-mail" href="mailto:andronatii@outlook.com">andronatii@outlook.com</Link></span>
+                        <span className="footer__text">
+                            E-mail: <Link href="mailto:andronatii@outlook.com" className="footer__link">andronatii@outlook.com</Link>
+                        </span>
                     </li>
                     <li>
-                        <span> Tel: <Link href="trl:+37377564312">+373 (775) 6-43-12</Link></span>
+                        <span className="footer__text">
+                            Tel: <Link href="tel:+37377564312" className="footer__link">+373 (775) 6-43-12</Link>
+                        </span>
                     </li>
                 </ul>
             </div>

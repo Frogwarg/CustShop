@@ -6,6 +6,7 @@ import { useCart } from '../contexts/CartContext';
 import Link from 'next/link';
 import { AxiosError } from 'axios';
 import authService from '../services/authService';
+import styles from './styles.module.css';
 
 interface FormData {
   email: string;
@@ -50,27 +51,23 @@ export default function Register() {
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
-    
-    // Email validation
+
     if (!formData.email) {
       newErrors.email = 'Email обязателен';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Введите корректный email';
     }
 
-    // Password validation
     if (!formData.password) {
       newErrors.password = 'Пароль обязателен';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Пароль должен быть не менее 6 символов';
     }
 
-    // Confirm password
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Пароли не совпадают';
     }
 
-    // Name validation
     if (!formData.firstName) {
       newErrors.firstName = 'Имя обязательно';
     }
@@ -79,7 +76,6 @@ export default function Register() {
       newErrors.lastName = 'Фамилия обязательна';
     }
 
-    // Phone validation
     if (!formData.phoneNumber) {
       newErrors.phoneNumber = 'Телефон обязателен';
     } else if (!/^\+?[\d\s-()]{10,}$/.test(formData.phoneNumber)) {
@@ -96,7 +92,6 @@ export default function Register() {
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
     if (errors[name as keyof ValidationErrors]) {
       setErrors(prev => ({
         ...prev,
@@ -129,9 +124,8 @@ export default function Register() {
       await refreshCart();
       router.push('/');
     } catch (error: unknown) {
-      const axiosError = error as AxiosError<ErrorResponse>; // Приведение типа
+      const axiosError = error as AxiosError<ErrorResponse>;
       console.error('Полная ошибка:', axiosError);
-      console.error('Данные ответа:', axiosError.response?.data);
     
       setServerError(
         axiosError.response?.data?.message ||
@@ -142,127 +136,108 @@ export default function Register() {
     }
   };
 
-  const inputClassName = "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500";
-  const errorClassName = "text-red-500 text-sm mt-1";
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Регистрация
-          </h2>
-        </div>
-        
+    <div className={styles.container}>
+      <div className={styles.formWrapper}>
+        <h2 className={styles.title}>Регистрация</h2>
         {serverError && (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-            <p className="text-red-700">{serverError}</p>
-          </div>
+          <div className={styles.serverError}>{serverError}</div>
         )}
-
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <input
-                type="text"
-                name="firstName"
-                placeholder="Имя"
-                value={formData.firstName}
-                onChange={handleChange}
-                className={inputClassName}
-              />
-              {errors.firstName && <p className={errorClassName}>{errors.firstName}</p>}
-            </div>
-
-            <div>
-              <input
-                type="text"
-                name="lastName"
-                placeholder="Фамилия"
-                value={formData.lastName}
-                onChange={handleChange}
-                className={inputClassName}
-              />
-              {errors.lastName && <p className={errorClassName}>{errors.lastName}</p>}
-            </div>
-
-            <div>
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={handleChange}
-                className={inputClassName}
-              />
-              {errors.email && <p className={errorClassName}>{errors.email}</p>}
-            </div>
-
-            <div>
-              <input
-                type="tel"
-                name="phoneNumber"
-                placeholder="Телефон"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                className={inputClassName}
-              />
-              {errors.phoneNumber && <p className={errorClassName}>{errors.phoneNumber}</p>}
-            </div>
-
-            <div className="relative">
+        <form className={styles.form} onSubmit={handleSubmit}>
+          <div className={styles.inputGroup}>
+            <input
+              type="text"
+              name="firstName"
+              placeholder="Имя"
+              value={formData.firstName}
+              onChange={handleChange}
+              className={styles.input}
+            />
+            {errors.firstName && <p className={styles.error}>{errors.firstName}</p>}
+          </div>
+          <div className={styles.inputGroup}>
+            <input
+              type="text"
+              name="lastName"
+              placeholder="Фамилия"
+              value={formData.lastName}
+              onChange={handleChange}
+              className={styles.input}
+            />
+            {errors.lastName && <p className={styles.error}>{errors.lastName}</p>}
+          </div>
+          <div className={styles.inputGroup}>
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              className={styles.input}
+            />
+            {errors.email && <p className={styles.error}>{errors.email}</p>}
+          </div>
+          <div className={styles.inputGroup}>
+            <input
+              type="tel"
+              name="phoneNumber"
+              placeholder="Телефон"
+              value={formData.phoneNumber}
+              onChange={handleChange}
+              className={styles.input}
+            />
+            {errors.phoneNumber && <p className={styles.error}>{errors.phoneNumber}</p>}
+          </div>
+          <div className={styles.inputGroup}>
+            <div className={styles.passwordWrapper}>
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="Пароль"
                 value={formData.password}
                 onChange={handleChange}
-                className={inputClassName}
+                className={styles.input}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-gray-500"
+                className={styles.togglePassword}
               >
                 {showPassword ? "🙈" : "👁️"}
               </button>
             </div>
-
-            <div className="relative">
+            {errors.password && <p className={styles.error}>{errors.password}</p>}
+          </div>
+          <div className={styles.inputGroup}>
+            <div className={styles.passwordWrapper}>
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 name="confirmPassword"
                 placeholder="Подтвердите пароль"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className={inputClassName}
+                className={styles.input}
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-3 text-gray-500"
+                className={styles.togglePassword}
               >
                 {showConfirmPassword ? "🙈" : "👁️"}
               </button>
             </div>
+            {errors.confirmPassword && <p className={styles.error}>{errors.confirmPassword}</p>}
           </div>
-          <div>
-            <button
-              type="submit"
-              disabled={submitting}
-              className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                submitting ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
-              {submitting ? 'Регистрация...' : 'Зарегистрироваться'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={submitting}
+            className={styles.submitButton}
+          >
+            {submitting ? 'Регистрация...' : 'Зарегистрироваться'}
+          </button>
         </form>
-
-        <div className="text-center mt-4">
-          <Link href="/login" className="text-blue-600 hover:text-blue-500">
-            Уже есть аккаунт? Войти
-          </Link>
+        <div className={styles.loginLink}>
+          <Link href="/login">Уже есть аккаунт? Войти</Link>
         </div>
       </div>
     </div>

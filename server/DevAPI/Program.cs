@@ -23,8 +23,10 @@ builder.Services.AddLogging(configure =>
 
 //builder.Services.AddSingleton<ConnectionStringSelector>();
 
+//builder.Services.AddDbContext<StoreDbContext>(options =>
+//    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddDbContext<StoreDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("SessionPoolerConnection")));
 
 //builder.Services.AddDbContext<StoreDbContext>((serviceProvider, options) =>
 //{

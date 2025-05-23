@@ -149,22 +149,27 @@ namespace DevAPI.Services.Implementations
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
             {
-                // Возвращаем true даже если пользователь не найден, 
-                // чтобы не раскрывать информацию о существовании email
+                _logger.LogWarning($"Попытка сброса пароля для несуществующего email: {email}");
                 return true;
             }
 
-            // Генерируем токен для сброса пароля
+            var appUrl = _configuration["AppUrl"];
+            if (string.IsNullOrEmpty(appUrl))
+            {
+                _logger.LogError("AppUrl не настроен в конфигурации");
+                throw new InvalidOperationException("AppUrl не настроен");
+            }
+
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetLink = $"{appUrl}/reset-password?email={email}&token={WebUtility.UrlEncode(token)}";
 
-            // Создаём ссылку для сброса пароля
-            var resetLink = $"{_configuration["AppUrl"]}/reset-password?email={email}&token={WebUtility.UrlEncode(token)}";
+            _logger.LogInformation($"Сформирована ссылка для сброса пароля: {resetLink}");
 
-            // Отправляем email
             await _emailService.SendEmailAsync(
                 email,
                 "Сброс пароля",
-                $"Для сброса пароля перейдите по ссылке: {resetLink}"
+                $"<p>Для сброса пароля перейдите по ссылке: <a href=\"{resetLink}\">Сбросить пароль</a></p>" +
+                "<p>Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</p>"
             );
 
             return true;
@@ -184,8 +189,7 @@ namespace DevAPI.Services.Implementations
                 throw new BadRequestException(string.Join(", ", result.Errors.Select(e => e.Description)));
             }
 
-            // Сбрасываем refresh token при смене пароля
-            user.RefreshToken = null;
+            user.RefreshToken = "";
             user.RefreshTokenExpiryTime = DateTime.MinValue;
             await _userManager.UpdateAsync(user);
 

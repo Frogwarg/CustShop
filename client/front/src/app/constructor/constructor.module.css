@@ -62,6 +62,7 @@
   position: relative;
   overflow: hidden;
   pointer-events: auto !important;
+  border: 2px solid #eee;
 }
 
 /* Загрузочный индикатор для канваса */
