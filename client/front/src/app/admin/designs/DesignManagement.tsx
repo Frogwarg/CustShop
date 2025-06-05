@@ -98,7 +98,7 @@ const DesignManagement: React.FC = () => {
   };
 
   const editDesignHandler = (designId: string) => {
-        router.push(`/constructor?designId=${designId}`);
+        router.push(`/design-constructor?designId=${designId}`);
     };
 
   const handlePreviousPage = () => {

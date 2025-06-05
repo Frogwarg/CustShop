@@ -46,7 +46,7 @@ export default function Cart() {
     }
 
     const editDesign = (designId: string) => {
-        router.push(`/constructor?designId=${designId}`);
+        router.push(`/design-constructor?designId=${designId}`);
     };
 
     const handleQuantityChange = async (designId: string, newQuantity: number) => {

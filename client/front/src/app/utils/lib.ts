@@ -1,4 +1,4 @@
-import { Layer } from '../constructor/Layers/useLayers';
+import { Layer } from '../design-constructor/Layers/useLayers';
 import { fabric } from 'fabric';
 export const dataURLtoBlob = (dataURL: string) => {
     const arr = dataURL.split(',');

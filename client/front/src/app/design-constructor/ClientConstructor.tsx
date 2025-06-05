@@ -1202,7 +1202,7 @@ export default function ClientConstructor() {
                             <button
                                 onClick={() => {
                                     resetDesign();
-                                    router.push('/constructor');
+                                    router.push('/design-constructor');
                                 }}
                                 className={styles.constructorButton}
                             >

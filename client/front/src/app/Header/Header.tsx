@@ -51,7 +51,7 @@ const Header = () => {
                             <Link href="/" className="header__link" onClick={() => setIsMenuOpen(false)}>Главная</Link>
                         </li>
                         <li>
-                            <Link href="/constructor" className="header__link" onClick={() => setIsMenuOpen(false)}>Конструктор</Link>
+                            <Link href="/design-constructor" className="header__link" onClick={() => setIsMenuOpen(false)}>Конструктор</Link>
                         </li>
                         <li>
                             <Link href="/catalog" className="header__link" onClick={() => setIsMenuOpen(false)}>Каталог</Link>
@@ -133,7 +133,7 @@ const Header = () => {
                             <Link href="/" className="header__link">Главная</Link>
                         </li>
                         <li>
-                            <Link href="/constructor" className="header__link">Конструктор</Link>
+                            <Link href="/design-constructor" className="header__link">Конструктор</Link>
                         </li>
                         <li>
                             <Link href="/catalog" className="header__link">Каталог</Link>

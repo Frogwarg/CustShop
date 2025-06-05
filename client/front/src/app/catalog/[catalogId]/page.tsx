@@ -88,7 +88,7 @@ const ProductPage = () => {
       alert('Ошибка: Товар не найден.');
       return;
     }
-    router.push(`/constructor?designId=${product.designId}`);
+    router.push(`/design-constructor?designId=${product.designId}`);
   };
 
   if (loading) return <div className={styles.loading}>Загрузка...</div>;

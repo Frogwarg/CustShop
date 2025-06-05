@@ -514,7 +514,7 @@ const ProfilePage = () => {
                     <p><strong>Дата создания:</strong> {new Date(design.createdAt).toLocaleString('ru-RU')}</p>
                     <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
                       <Link
-                        href={`/constructor?designId=${design.id}`}
+                        href={`/design-constructor?designId=${design.id}`}
                         className={styles.link}
                       >
                         Редактировать

@@ -11,7 +11,7 @@ export default function HomePage() {
         {/* <Image src="/hero-image.jpg" alt="Custom Product" width={1200} height={400} /> */}
         <h1>Создай свой стиль с CustShop!</h1>
         <p>Используй наш конструктор для создания уникальных вещей</p>
-        <Link href="/constructor" className={styles.btnPrimary}>Создать сейчас</Link>
+        <Link href="/design-constructor" className={styles.btnPrimary}>Создать сейчас</Link>
       </section>
 
       {/* Преимущества */}
@@ -39,7 +39,7 @@ export default function HomePage() {
       {/* Конструктор */}
       {/* <section className={styles.constructorSection}>
         <h2>Создай свой уникальный товар</h2>
-        <Link href="/constructor" className={styles.btnPrimary}>Попробовать сейчас</Link>
+        <Link href="/design-constructor" className={styles.btnPrimary}>Попробовать сейчас</Link>
       </section> */}
 
       {/* Отзывы */}

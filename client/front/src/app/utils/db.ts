@@ -1,5 +1,4 @@
 import { openDB, IDBPDatabase } from 'idb';
-// import { Layer } from '@/app/constructor/Layers/useLayers';
 
 let dbPromise: Promise<IDBPDatabase> | undefined;
 
