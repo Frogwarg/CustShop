@@ -7,12 +7,13 @@ import { CartProvider } from './contexts/CartContext';
 
 import Header from "./Header/Header";
 import Footer from "./Footer/Footer";
+import CookieConsent from "./cookieConc/CookieConcent";
 
 export const metadata: Metadata = {
   title: "CustShop",
   description: "Online shop selling customized products",
   openGraph: {title: "CustShop", description: "Custom shop"},
-  icons: "./favicon.ico"
+  icons: "./logo.ico"
 };
 
 export default function RootLayout({
@@ -23,16 +24,17 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body>
-      <AuthProvider>
-        <CartProvider>
-          <Header />
-            <main>
-              {children}
-              <Toaster expand={true} position="bottom-left" richColors closeButton/>
-            </main>
-          <Footer />
-        </CartProvider>
-      </AuthProvider>
+        <AuthProvider>
+          <CartProvider>
+            <Header />
+              <main>
+                {children}
+                <Toaster expand={true} position="bottom-left" richColors closeButton/>
+              </main>
+            <Footer />
+          </CartProvider>
+        </AuthProvider>
+        <CookieConsent />
       </body>
     </html>
   );

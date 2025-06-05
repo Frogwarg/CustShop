@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: custshop-api
+    region: frankfurt
+    env: docker
+    rootDir: server/DevAPI
+    plan: free
+    autoDeploy: true

@@ -35,7 +35,7 @@ const Header = () => {
         <header className="header">
             <div className="header__logo">
                 <Link href="/">
-                    <Image src="/logo.svg" alt="logo" width={77} height={27} className="header__logo-image"/>
+                    <Image src="/icons/logo.svg" alt="logo" width={77} height={27} className="header__logo-image"/>
                     <span className="header__logo-text">CustShop</span>
                 </Link>
             </div>

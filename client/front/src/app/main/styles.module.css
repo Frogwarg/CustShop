@@ -1,0 +1,162 @@
+.hero {
+  text-align: center;
+  padding: 4rem 1rem;
+  /* background-color: #f9f9f9; */
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  color: #1a202c;
+  margin-bottom: 1rem;
+  font-family: 'Proxima Nova', sans-serif;
+}
+
+.hero p {
+  font-size: 1.25rem;
+  color: #4a5568;
+  margin-bottom: 2rem;
+}
+
+.btnPrimary {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background-color: #3182ce;
+  color: white;
+  border-radius: 0.375rem;
+  text-decoration: none;
+  font-family: 'Proxima Nova', sans-serif;
+}
+
+.btnPrimary:hover {
+  background-color: #2b6cb0;
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.feature {
+  text-align: center;
+}
+
+.feature h3 {
+  font-size: 1.5rem;
+  color: #1a202c;
+  margin: 0.5rem 0;
+}
+
+.reviewsSection {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: 2rem 1rem;
+  /* background-color: #fff; */
+}
+
+.reviewsTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a202c;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-family: 'Proxima Nova', sans-serif;
+}
+
+.reviewsSlider {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.reviewCard {
+  background-color: #f9f9f9;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.reviewText {
+  font-size: 1rem;
+  color: #4a5568;
+  margin-bottom: 1rem;
+  font-family: 'Proxima Nova', sans-serif;
+  line-height: 1.5;
+}
+
+.reviewAuthor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.reviewName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a202c;
+  font-family: 'Proxima Nova', sans-serif;
+}
+
+.popular {
+  padding: 2rem;
+  text-align: center;
+}
+
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.constructorSection,
+.reviews,
+.signup {
+  padding: 2rem;
+  text-align: center;
+  /* background-color: #fff; */
+}
+
+@media (max-width: 767px) {
+  .hero h1 {
+    font-size: 1.75rem;
+  }
+
+  .hero p {
+    font-size: 1rem;
+  }
+
+  .btnPrimary {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .reviewsSection {
+    margin: 2rem auto;
+    padding: 1rem;
+  }
+
+  .reviewsTitle {
+    font-size: 1.5rem;
+  }
+
+  .reviewsSlider {
+    grid-template-columns: 1fr;
+  }
+
+  .reviewCard {
+    padding: 1rem;
+  }
+
+  .reviewText {
+    font-size: 0.875rem;
+  }
+
+  .reviewName {
+    font-size: 0.875rem;
+  }
+}

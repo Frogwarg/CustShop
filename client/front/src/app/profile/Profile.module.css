@@ -80,6 +80,7 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  max-width: 150px;
   transition: background-color 0.2s;
 }
 
@@ -93,6 +94,7 @@
 }
 
 .button.red {
+  margin-top:10px;
   background-color: #ef4444;
   color: white;
 }

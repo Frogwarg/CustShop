@@ -49,7 +49,7 @@ builder.Services.AddCors(options =>
                .AllowCredentials();
     });
 });
-builder.WebHost.UseUrls("http://0.0.0.0:5123", "https://0.0.0.0:7036", "http://localhost:5123", "https://localhost:7036");
+//builder.WebHost.UseUrls("http://0.0.0.0:5123", "https://0.0.0.0:7036", "http://localhost:5123", "https://localhost:7036");
 builder.Services.AddIdentity<User, Role>(options => {
     options.Password.RequiredLength = 8;
     options.Password.RequireNonAlphanumeric = true;

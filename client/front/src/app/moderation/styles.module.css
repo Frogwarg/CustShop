@@ -1,0 +1,223 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  background-color: #f9f9f9;
+  min-height: 100vh;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a202c;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-family: 'Proxima Nova', sans-serif;
+}
+
+.designsList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.designCard {
+  background-color: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.designTitle {
+  width:fit-content;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0;
+  font-family: 'Proxima Nova', sans-serif;
+  cursor: pointer;
+}
+.designDescriptionWrapper{
+  max-width: 300px;
+}
+
+.designDescription {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  font-family: 'Proxima Nova', sans-serif;
+  text-overflow: ellipsis;
+  font-size: 1rem;
+  color: #4a5568;
+  margin: 0;
+  cursor: pointer;
+}
+
+.imageWrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 200px;
+  align-self: center;
+}
+
+.designImage {
+  object-fit: contain;
+}
+
+.input, .editInput {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  color: #1a202c;
+  transition: border-color 0.2s ease-in-out;
+  font-family: 'Proxima Nova', sans-serif;
+}
+
+.input:focus, .editInput:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.3);
+}
+
+.input::placeholder, .editInput::placeholder {
+  color: #a0aec0;
+}
+
+.select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  color: #1a202c;
+  min-height: 100px;
+  font-family: 'Proxima Nova', sans-serif;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.3);
+}
+
+.textarea, .editTextarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  color: #1a202c;
+  min-height: 100px;
+  resize: vertical;
+  transition: border-color 0.2s ease-in-out;
+  font-family: 'Proxima Nova', sans-serif;
+}
+
+.textarea:focus, .editTextarea:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.3);
+}
+
+.textarea::placeholder, .editTextarea::placeholder {
+  color: #a0aec0;
+}
+
+.editInput {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.editTextarea {
+  min-height: 80px;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.approveButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #3182ce;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  font-family: 'Proxima Nova', sans-serif;
+}
+
+.approveButton:hover {
+  background-color: #2b6cb0;
+}
+
+.rejectButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #e53e3e;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  font-family: 'Proxima Nova', sans-serif;
+}
+
+.rejectButton:hover {
+  background-color: #c53030;
+}
+
+.error {
+  font-size: 1rem;
+  color: #e53e3e;
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.loading {
+  font-size: 1rem;
+  color: #4a5568;
+  text-align: center;
+  margin-top: 2rem;
+}
+
+@media (max-width: 767px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .designCard {
+    padding: 1rem;
+  }
+
+  .designTitle, .editInput {
+    font-size: 1.25rem;
+  }
+
+  .designDescription, .editTextarea {
+    font-size: 0.875rem;
+  }
+
+  .input, .select, .textarea, .editInput, .editTextarea {
+    font-size: 0.875rem;
+  }
+
+  .approveButton, .rejectButton {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+  }
+}
