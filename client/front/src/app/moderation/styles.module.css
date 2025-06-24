@@ -15,13 +15,134 @@
   font-family: 'Proxima Nova', sans-serif;
 }
 
-.designsList {
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.th,
+.td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.tr {
+  cursor: pointer;
+}
+
+.tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.detailsContent {
+  padding: 16px;
+  background-color: #f5f5f5;
+}
+
+.orderDetails {
+  display: flex;
+  gap: 20px;
+}
+
+.orderItems {
+  flex: 2;
+}
+
+.customerInfo {
+  flex: 1;
+}
+
+.subTitle {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.itemList {
+  list-style: none;
+  padding: 0;
+}
+
+.orderItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.orderItemImage {
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.infoTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.infoLabel {
+  font-weight: bold;
+  padding: 4px;
+  width: 30%;
+}
+
+.infoValue {
+  padding: 4px;
+}
+
+.form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.input {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  flex: 1;
+}
+
+.saveButton {
+  padding: 8px 16px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.editInput {
+  padding: 4px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.editable {
+  cursor: pointer;
+}
+
+.editable:hover {
+  background-color: #e0e0e0;
+}
+
+.designsList, .orderList {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1.5rem;
 }
 
-.designCard {
+.designCard, .orderCard {
   background-color: #fff;
   border-radius: 0.5rem;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -31,7 +152,7 @@
   gap: 1rem;
 }
 
-.designTitle {
+.designTitle, .orderTitle {
   width:fit-content;
   font-size: 1.5rem;
   font-weight: 600;
@@ -189,6 +310,41 @@
   color: #4a5568;
   text-align: center;
   margin-top: 2rem;
+}
+
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.tabs button {
+    padding: 10px 20px;
+    border: none;
+    background: #f0f0f0;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.activeTab {
+    background: #007bff !important;
+    color: white !important;
+}
+
+.editInput {
+  padding: 4px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.editable {
+  cursor: pointer;
+}
+
+.editable:hover {
+  background-color: #e0e0e0;
 }
 
 @media (max-width: 767px) {

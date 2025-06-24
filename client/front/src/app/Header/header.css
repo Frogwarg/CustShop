@@ -130,23 +130,21 @@
   margin: 0.5rem 0;
 }
 
-@media (min-width: 1024px) {
+@media (max-width: 1550px) {
   .header {
-    padding: 0 15rem;
+    padding: 0 7rem;
+  }
+}
+
+@media (max-width: 1300px) {
+  .header {
+    padding: 0 3rem;
   }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .header {
     padding: 0 2rem;
-  }
-
-  .header__logo-image {
-    width: 60px;
-  }
-
-  .header__logo-text {
-    font-size: 1.25rem;
   }
 
   .header__ul > li {
@@ -161,14 +159,6 @@
 @media (max-width: 767px) {
   .header {
     padding: 0 1rem;
-  }
-
-  .header__logo-image {
-    width: 50px;
-  }
-
-  .header__logo-text {
-    font-size: 1rem;
   }
 
   .menu {

@@ -47,6 +47,7 @@
   padding: 1rem;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
   transition: width 0.3s ease;
+  overflow: auto;
 }
 
 .constructorSidebarLeft {
@@ -61,7 +62,7 @@
 .constructorCanvasArea {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: column; 
   align-items: center;
   justify-content: center;
   background-color: #e9e9e9;

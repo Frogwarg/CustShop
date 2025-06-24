@@ -10,11 +10,13 @@ namespace DevAPI.Services.Implementations
     {
         private readonly StoreDbContext _context;
         private readonly ILogger<OrderService> _logger;
+        private readonly IEmailService _emailService;
 
-        public OrderService(StoreDbContext context, ILogger<OrderService> logger)
+        public OrderService(StoreDbContext context, ILogger<OrderService> logger, IEmailService emailService)
         {
             _context = context;
             _logger = logger;
+            _emailService = emailService;
         }
 
         public async Task<OrderDto> CreateOrderAsync(Guid? userId, string sessionId, CreateOrderDto request)
@@ -116,6 +118,99 @@ namespace DevAPI.Services.Implementations
 
             // Возвращаем DTO заказа
             return await GetOrderAsync(order.Id, userId);
+        }
+
+        public async Task<OrderDto> UpdateOrderStatusAsync(Guid orderId, string newStatus, AddressDto? newAddress = null)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Address)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Design)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+            {
+                throw new Exception("Заказ не найден");
+            }
+
+            order.Status = newStatus;
+
+            if (newAddress != null)
+            {
+                order.Address.Street = newAddress.Street;
+                order.Address.City = newAddress.City;
+                order.Address.State = newAddress.State;
+                order.Address.PostalCode = newAddress.PostalCode;
+                order.Address.Country = newAddress.Country;
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Отправляем email при статусе "Confirmed"
+            if (newStatus == "Confirmed")
+            {
+                var orderItems = order.OrderItems.Select(oi => $"- {oi.Design.Name} (x{oi.Quantity}): {oi.Quantity * oi.UnitPrice} ₽").ToList();
+                var emailBody = $@"<h2>Ваш заказ #{order.Id} подтверждён!</h2>
+                    <p>Ваш заказ успешно подтверждён и готов к обработке.</p>
+                    <h3>Детали заказа:</h3>
+                    <ul>{string.Join("", orderItems.Select(d => $"<li>{d}</li>"))}</ul>
+                    <p><strong>Общая сумма:</strong> {order.TotalAmount} ₽</p>
+                    <p><strong>Способ доставки:</strong> {order.DeliveryMethod}</p>
+                    <p><strong>Адрес доставки:</strong> {order.Address.Street}, {order.Address.City}, {order.Address.State}, {order.Address.PostalCode}, {order.Address.Country}</p>
+                    <p>Спасибо за ваш заказ!</p>";
+                await _emailService.SendEmailAsync(order.Email, $"Заказ #{order.Id} подтверждён", emailBody);
+            }
+
+            return await GetOrderAsync(orderId, order.UserId);
+        }
+
+        public async Task<List<OrderDto>> GetPaidOrdersAsync()
+        {
+            return await _context.Orders
+                .Include(o => o.Address)
+                .Include(o => o.Discount)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Design)
+                .Where(o => o.PaymentStatus == "Paid")
+                .Select(o => new OrderDto
+                {
+                    Id = o.Id,
+                    TotalAmount = o.TotalAmount,
+                    DiscountAmount = o.DiscountAmount,
+                    Status = o.Status,
+                    PaymentStatus = o.PaymentStatus,
+                    DeliveryMethod = o.DeliveryMethod,
+                    OrderComment = o.OrderComment,
+                    Address = new AddressDto
+                    {
+                        Street = o.Address.Street,
+                        City = o.Address.City,
+                        State = o.Address.State,
+                        PostalCode = o.Address.PostalCode,
+                        Country = o.Address.Country
+                    },
+                    Discount = o.Discount != null ? new DiscountDto
+                    {
+                        Code = o.Discount.Code,
+                        Amount = o.Discount.Amount,
+                        DiscountType = o.Discount.DiscountType
+                    } : null,
+                    OrderItems = o.OrderItems.Select(oi => new OrderItemDto
+                    {
+                        DesignId = oi.DesignId,
+                        DesignName = oi.Design.Name,
+                        PreviewUrl = oi.Design.PreviewUrl,
+                        Quantity = oi.Quantity,
+                        UnitPrice = oi.UnitPrice
+                    }).ToList(),
+                    CreatedAt = o.CreatedAt,
+                    FirstName = o.FirstName,
+                    LastName = o.LastName,
+                    MiddleName = o.MiddleName,
+                    Email = o.Email,
+                    PhoneNumber = o.PhoneNumber
+                })
+                .ToListAsync();
         }
 
         public async Task<OrderDto> GetOrderAsync(Guid orderId, Guid? userId)

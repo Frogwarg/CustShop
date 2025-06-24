@@ -1,6 +1,7 @@
 ﻿using DevAPI.Models.DTOs;
 using DevAPI.Models.Entities;
 using DevAPI.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -58,5 +59,43 @@ namespace DevAPI.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpGet("paid")]
+        [Authorize(Roles = "Moderator,Admin")]
+        public async Task<IActionResult> GetPaidOrders()
+        {
+            try
+            {
+                var orders = await _orderService.GetPaidOrdersAsync();
+                return Ok(orders);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении оплаченных заказов");
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPut("{orderId}/status")]
+        [Authorize(Roles = "Moderator,Admin")]
+        public async Task<IActionResult> UpdateOrderStatus(Guid orderId, [FromBody] UpdateOrderStatusRequest request)
+        {
+            try
+            {
+                var order = await _orderService.UpdateOrderStatusAsync(orderId, request.Status, request.Address);
+                return Ok(order);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при обновлении статуса заказа");
+                return StatusCode(500, ex.Message);
+            }
+        }
+    }
+
+    public class UpdateOrderStatusRequest
+    {
+        public string Status { get; set; }
+        public AddressDto? Address { get; set; }
     }
 }

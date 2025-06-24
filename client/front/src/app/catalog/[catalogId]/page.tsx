@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import styles from './styles.module.css';
+import authService from '@/app/services/authService';
 
 const ProductPage = () => {
   const params = useParams();
@@ -55,28 +56,42 @@ const ProductPage = () => {
         toast.error('Ошибка: Товар не найден.');
         return;
       }
-      const response = await fetch('/api/cart/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          design: {
-            id: product.id,
-            name: product.name,
-            description: product.description,
-            previewUrl: product.previewUrl,
-            designData: product.designData,
-            designHash: `${product.id}-${selectedSize}`,
-            productType: product.productType
-          },
-          quantity,
-          price: product.discountedPrice || product.price
-        })
-      });
-      if (response.ok) {
-        toast.success('Товар добавлен в корзину!');
-      } else {
-        toast.error('Ошибка при добавлении в корзину.');
-      }
+      await authService.axiosWithRefresh('post', '/cart/add', JSON.stringify({
+        design: {
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          previewUrl: product.previewUrl,
+          designData: product.designData,
+          designHash: `${product.id}-${selectedSize}`,
+          productType: product.productType
+        },
+        quantity,
+        price: product.discountedPrice || product.price
+      }));
+      // const response = await fetch('/api/cart/add', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     design: {
+      //       id: product.id,
+      //       name: product.name,
+      //       description: product.description,
+      //       previewUrl: product.previewUrl,
+      //       designData: product.designData,
+      //       designHash: `${product.id}-${selectedSize}`,
+      //       productType: product.productType
+      //     },
+      //     quantity,
+      //     price: product.discountedPrice || product.price
+      //   })
+      // });
+      toast.success('Товар добавлен в корзину!');
+      // if (response.ok) {
+      //   toast.success('Товар добавлен в корзину!');
+      // } else {
+      //   toast.error('Ошибка при добавлении в корзину.');
+      // }
     } catch (error) {
       console.error('Ошибка:', error);
       toast.error('Ошибка при добавлении в корзину.');

@@ -148,12 +148,6 @@ const UserManagement: React.FC = () => {
             placeholder="Телефон"
             className={styles.input}
           />
-          <textarea 
-            value={editUser.bio || ""}
-            onChange={(e) => setEditUser({ ...editUser, bio: e.target.value })}
-            placeholder="Биография"
-            className={styles.input}
-          />
           <select
             multiple
             value={editUser.roles}

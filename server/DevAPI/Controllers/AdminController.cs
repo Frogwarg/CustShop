@@ -130,11 +130,11 @@ namespace DevAPI.Controllers
         }
 
         [HttpPut("orders/{id}/status")]
-public async Task<IActionResult> UpdateOrderStatus(Guid id, [FromBody] UpdateOrderStatusRequest request)
-{
-    await _adminService.UpdateOrderStatusAsync(id, request.Status, request.PaymentStatus, request.AdminComment);
-    return Ok(new { message = "Статус заказа обновлен" });
-}
+        public async Task<IActionResult> UpdateOrderStatus(Guid id, [FromBody] DevAPI.Models.DTOs.UpdateOrderStatusRequest request)
+        {
+            await _adminService.UpdateOrderStatusAsync(id, request.Status, request.PaymentStatus, request.AdminComment);
+            return Ok(new { message = "Статус заказа обновлен" });
+        }
 
         [HttpGet("action-logs")]
         public async Task<ActionResult<(List<AdminActionLogDto> Logs, int TotalCount)>> GetAdminActionLogs(

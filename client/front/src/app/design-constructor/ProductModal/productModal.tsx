@@ -41,13 +41,13 @@ const ProductModal = ({ isOpen, onClose, onSelectProduct }: {
                     <button className='constructor__product_modal-closeBtn' onClick={onClose}>Закрыть</button>
                 </div>
                 {/* Список категорий */}
-                <div style={{ marginBottom: '20px' }}>
+                {/* <div style={{ marginBottom: '20px' }}>
                     {categories.map((category, index) => (
                         <button key={index} style={{ marginRight: '10px' }}>
                             {category}
                         </button>
                     ))}
-                </div>
+                </div> */}
                 
                 {/* Список товаров */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>

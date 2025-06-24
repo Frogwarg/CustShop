@@ -14,16 +14,18 @@ namespace DevAPI.Services.Implementations
     public class AdminService : IAdminService
     {
         private readonly UserManager<User> _userManager;
+        private readonly IEmailService _emailService;
         private readonly StoreDbContext _context;
         private readonly ILogger<AdminService> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AdminService(UserManager<User> userManager, StoreDbContext context, ILogger<AdminService> logger, IHttpContextAccessor httpContextAccessor)
+        public AdminService(UserManager<User> userManager, StoreDbContext context, ILogger<AdminService> logger, IHttpContextAccessor httpContextAccessor, IEmailService emailService)
         {
             _userManager = userManager;
             _context = context;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
+            _emailService = emailService;
         }
 
         public async Task<(List<TagDto> Tags, int TotalCount)> GetTagsAsync(string search = null, int page = 1, int pageSize = 10)
@@ -318,13 +320,31 @@ namespace DevAPI.Services.Implementations
 
         public async Task UpdateOrderStatusAsync(Guid orderId, string status, string paymentStatus, string adminComment = null)
         {
-            var order = await _context.Orders.FindAsync(orderId);
+            var order = await _context.Orders
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Design)
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
             if (order == null) throw new NotFoundException("Заказ не найден");
 
             order.Status = status;
             order.PaymentStatus = paymentStatus;
             order.AdminComment = adminComment;
             await _context.SaveChangesAsync();
+
+            // Отправляем email при статусе "Confirmed"
+            if (status == "Confirmed")
+            {
+                var orderItems = order.OrderItems.Select(oi => $"- {oi.Design.Name} (x{oi.Quantity}): {oi.Quantity * oi.UnitPrice} ₽").ToList();
+                var emailBody = $@"<h2>Ваш заказ #{order.Id} подтверждён!</h2>
+                    <p>Ваш заказ успешно подтверждён и готов к обработке.</p>
+                    <h3>Детали заказа:</h3>
+                    <ul>{string.Join("", orderItems.Select(d => $"<li>{d}</li>"))}</ul>
+                    <p><strong>Общая сумма:</strong> {order.TotalAmount} ₽</p>
+                    <p><strong>Способ доставки:</strong> {order.DeliveryMethod}</p>
+                    <p><strong>Адрес доставки:</strong> {order.Address.Street}, {order.Address.City}, {order.Address.State}, {order.Address.PostalCode}, {order.Address.Country}</p>
+                    <p>Спасибо за ваш заказ!</p>";
+                await _emailService.SendEmailAsync(order.Email, $"Заказ #{order.Id} подтверждён", emailBody);
+            }
 
             await LogAdminActionAsync("UpdateOrderStatus", "Order", orderId, new { Status = status, PaymentStatus = paymentStatus, AdminComment = adminComment });
         }

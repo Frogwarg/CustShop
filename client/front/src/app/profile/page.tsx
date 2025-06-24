@@ -68,6 +68,11 @@ const ProfilePage = () => {
     label: "",
   });
 
+    const handleLogout = async () =>{
+      await logout();
+      router.push('/');
+    }
+
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/login");
@@ -534,7 +539,7 @@ const ProfilePage = () => {
         </div>
       )}
 
-      <button onClick={logout} className={`${styles.button} ${styles.red}`}>
+      <button onClick={handleLogout} className={`${styles.button} ${styles.red}`}>
         Выйти
       </button>
     </div>

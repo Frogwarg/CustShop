@@ -26,10 +26,10 @@ const Footer = () => {
                 <h3 className="footer__title">Контакты</h3>
                 <ul className="footer__ul">
                     <li>
-                        <span className="footer__text">ул. Примерная, д. 123</span>
+                        <span className="footer__text">ул. Ларионова, д. 123</span>
                     </li>
                     <li>
-                        <span className="footer__text">г. Пример, 123456</span>
+                        <span className="footer__text">г. Тирасполь, 3300</span>
                     </li>
                     <li>
                         <span className="footer__text">
