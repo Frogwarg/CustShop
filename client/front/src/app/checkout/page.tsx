@@ -132,7 +132,6 @@ const CheckoutPage = () => {
     const fetchCart = async () => {
       try {
         const response = await authService.axiosWithRefresh<CartItem[]>('get', '/cart');
-        console.log('Cart items:', response);
         setCartItems(response);
       } catch {
         setError('Не удалось загрузить корзину');
@@ -176,7 +175,6 @@ const CheckoutPage = () => {
       };
 
       // const response = await axios.post<OrderResponse>('/api/order', orderData);
-      console.log("Order data: ", orderData);
       const response = await authService.axiosWithRefresh<OrderResponse>('post', '/order', orderData);
       router.push(`/order-confirmation?orderId=${response.id}`);
     } catch (err: unknown) {

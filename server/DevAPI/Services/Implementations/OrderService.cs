@@ -116,6 +116,17 @@ namespace DevAPI.Services.Implementations
 
             await _context.SaveChangesAsync();
 
+            var orderDetails = cartItems.Select(c => $"- {c.Design.Name} (x{c.Quantity}): {c.Quantity * c.Price} ₽").ToList();
+            var emailBody = $@"<h2>Ваш заказ #{order.Id} успешно создан!</h2>
+                <p>Спасибо за ваш заказ. Наш сотрудник свяжется с вами в ближайшее время для подтверждения.</p>
+                <h3>Детали заказа:</h3>
+                <ul>{string.Join("", orderDetails.Select(d => $"<li>{d}</li>"))}</ul>
+                <p><strong>Общая сумма:</strong> {totalAmount} ₽</p>
+                <p><strong>Способ доставки:</strong> {order.DeliveryMethod}</p>
+                <p><strong>Адрес доставки:</strong> {address.Street}, {address.City}, {address.State}, {address.PostalCode}, {address.Country}</p>
+                <p>Если у вас есть вопросы, свяжитесь с нами.</p>";
+            await _emailService.SendEmailAsync(order.Email, $"Заказ #{order.Id} создан", emailBody);
+
             // Возвращаем DTO заказа
             return await GetOrderAsync(order.Id, userId);
         }

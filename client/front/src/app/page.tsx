@@ -22,6 +22,7 @@ export default function HomePage() {
             alt="Custom Product"
             width={1200}
             height={400}
+            priority={true}
           />
           <div className={`${styles.heroOverlayText} ${lobster.className}`} >CustShop</div>
         </div>

@@ -5,7 +5,11 @@ import styles from './styles.module.css';
 const Filters = ({ onFilterChange }: { onFilterChange: (filters: { search: string; productType: string }) => void }) => {
   const [search, setSearch] = useState('');
   const [productType, setProductType] = useState('');
-  const productTypes = ['shirt', 'Mug', 'Pillow'];
+  const productTypes = [
+    { value: 'shirt', label: 'Футболка' },
+    { value: 'Mug', label: 'Кружка' },
+    { value: 'Pillow', label: 'Подушка' },
+  ];
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,9 +38,9 @@ const Filters = ({ onFilterChange }: { onFilterChange: (filters: { search: strin
           className={styles.select}
         >
           <option value="">Все</option>
-          {productTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
+          {productTypes.map(({ value, label }) => (
+            <option key={value} value={value}>
+              {label}
             </option>
           ))}
         </select>
