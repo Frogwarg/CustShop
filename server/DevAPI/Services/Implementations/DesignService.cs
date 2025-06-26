@@ -172,7 +172,7 @@ namespace DevAPI.Services.Implementations
             return designs;
         }
 
-        public async Task ApproveDesign(Guid designId, string moderatorComment)
+        public async Task ApproveDesign(Guid designId, ApproveDesignRequest request)
         {
             var design = await _context.Designs
                 .FirstOrDefaultAsync(d => d.Id == designId);
@@ -183,8 +183,10 @@ namespace DevAPI.Services.Implementations
                 throw new Exception("Дизайн не найден или не находится на модерации.");
             }
 
+            design.Name = request.Name;
+            design.Description = request.Description;
             design.ModerationStatus = "Approved";
-            design.ModeratorComment = moderatorComment;
+            design.ModeratorComment = request.ModeratorComment;
 
             await _context.SaveChangesAsync();
             _logger.LogInformation($"Дизайн {designId} одобрен модератором.");

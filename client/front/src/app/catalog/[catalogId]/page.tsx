@@ -15,7 +15,6 @@ const ProductPage = () => {
     name: string;
     description: string;
     previewUrl: string;
-    designData: string;
     productType: string;
     price: number;
     discountedPrice?: number;
@@ -25,6 +24,12 @@ const ProductPage = () => {
     materials: string[];
     additionalInfo?: string;
   }
+
+  const productTypes = [
+    { value: 'shirt', label: 'Футболка' },
+    { value: 'Mug', label: 'Кружка' },
+    { value: 'Pillow', label: 'Подушка' },
+  ];
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,42 +61,12 @@ const ProductPage = () => {
         toast.error('Ошибка: Товар не найден.');
         return;
       }
-      await authService.axiosWithRefresh('post', '/cart/add', JSON.stringify({
-        design: {
-          id: product.id,
-          name: product.name,
-          description: product.description,
-          previewUrl: product.previewUrl,
-          designData: product.designData,
-          designHash: `${product.id}-${selectedSize}`,
-          productType: product.productType
-        },
+      await authService.axiosWithRefresh('post', '/cart/add-existing', JSON.stringify({
+        designId: product.designId,
         quantity,
         price: product.discountedPrice || product.price
       }));
-      // const response = await fetch('/api/cart/add', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     design: {
-      //       id: product.id,
-      //       name: product.name,
-      //       description: product.description,
-      //       previewUrl: product.previewUrl,
-      //       designData: product.designData,
-      //       designHash: `${product.id}-${selectedSize}`,
-      //       productType: product.productType
-      //     },
-      //     quantity,
-      //     price: product.discountedPrice || product.price
-      //   })
-      // });
       toast.success('Товар добавлен в корзину!');
-      // if (response.ok) {
-      //   toast.success('Товар добавлен в корзину!');
-      // } else {
-      //   toast.error('Ошибка при добавлении в корзину.');
-      // }
     } catch (error) {
       console.error('Ошибка:', error);
       toast.error('Ошибка при добавлении в корзину.');
@@ -136,7 +111,7 @@ const ProductPage = () => {
           </div>
           <p className={styles.productInfo}>Теги: {product.tags.join(', ')}</p>
           <p className={styles.productInfo}>Автор: {product.authorName}</p>
-          <p className={styles.productInfo}>Тип продукта: {product.productType}</p>
+          <p className={styles.productInfo}>Тип продукта: {productTypes.find((type) => type.value.toLowerCase() === product.productType.toLowerCase())?.label || product.productType}</p>
           <div className={styles.inputGroup}>
             <label htmlFor="size" className={styles.label}>Размер</label>
             <select

@@ -11,7 +11,6 @@
         public List<string> Tags { get; set; } = new List<string>();
         public string PreviewUrl { get; set; }
         public string ProductType { get; set; }
-        public string DesignData { get; set; }
         public string AuthorName { get; set; }
         public List<string> Sizes { get; set; }
         public List<string> Materials { get; set; }

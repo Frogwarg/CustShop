@@ -6,6 +6,8 @@ import Link from "next/link";
 import Image from "next/image";
 import authService from "../services/authService";
 import { toast } from "sonner";
+
+import AddAddressModal from "./AddAddressModal";
 import styles from "./Profile.module.css";
 interface UserData {
   firstName: string;
@@ -59,14 +61,6 @@ const ProfilePage = () => {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("info");
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [newAddress, setNewAddress] = useState({
-    street: "",
-    city: "",
-    state: "",
-    postalCode: "",
-    country: "",
-    label: "",
-  });
 
     const handleLogout = async () =>{
       await logout();
@@ -82,7 +76,6 @@ const ProfilePage = () => {
     const fetchUserData = async () => {
       try {
         const response = await authService.axiosWithRefresh<UserData>('get', "/profile");
-        console.log("Профиль пользователя:", response);
         setUserData(response);
       } catch (error) {
         console.error("Ошибка загрузки профиля:", error);
@@ -150,20 +143,6 @@ const ProfilePage = () => {
     }
   };
 
-  const handleAddAddress = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      const response = await authService.axiosWithRefresh<Address>('post', "/profile/addresses", JSON.stringify(newAddress));
-      setAddresses([...addresses, response]);
-      setNewAddress({ street: "", city: "", state: "", postalCode: "", country: "", label: "" });
-      setShowAddressModal(false);
-      toast.success("Адрес добавлен!");
-    } catch (error) {
-      console.error("Ошибка добавления адреса:", error);
-      toast.error("Ошибка добавления адреса");
-    }
-  };
-
   const handleDeleteAddress = async (addressId: string) => {
     try {
       await authService.axiosWithRefresh('delete', `/profile/addresses/${addressId}`);
@@ -174,17 +153,6 @@ const ProfilePage = () => {
       toast.error("Ошибка удаления адреса");
     }
   };
-
-  // const handleDeleteDesign = async (designId: string) => {
-  //   try {
-  //     await authService.axiosWithRefresh('delete', `/profile/designs/${designId}`);
-  //     setDesigns(designs.filter((design) => design.id !== designId));
-  //     toast.success("Дизайн удален!");
-  //   } catch (error) {
-  //     console.error("Ошибка удаления дизайна:", error);
-  //     toast.error("Ошибка удаления дизайна");
-  //   }
-  // };
 
   const toggleOrderDetails = (orderId: string) => {
     setExpandedOrder(expandedOrder === orderId ? null : orderId);
@@ -202,7 +170,7 @@ const ProfilePage = () => {
           className={`${styles.tabButton} ${activeTab === "info" ? styles.active : ""}`}
           onClick={() => setActiveTab("info")}
         >
-          Мой профиль
+          Общие данные
         </button>
         <button
           className={`${styles.tabButton} ${activeTab === "addresses" ? styles.active : ""}`}
@@ -220,7 +188,7 @@ const ProfilePage = () => {
           className={`${styles.tabButton} ${activeTab === "designs" ? styles.active : ""}`}
           onClick={() => setActiveTab("designs")}
         >
-          История дизайнов
+          Мои дизайны
         </button>
       </div>
 
@@ -282,12 +250,6 @@ const ProfilePage = () => {
                 className={styles.input}
               />
             </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Адреса доставки:</label>
-              <Link href="#" onClick={() => setActiveTab("addresses")} className={styles.link}>
-                Перейти к адресам
-              </Link>
-            </div>
             <button type="submit" className={`${styles.button} ${styles.green}`}>
               Сохранить
             </button>
@@ -344,89 +306,14 @@ const ProfilePage = () => {
           </button>
 
           {/* Модальное окно для добавления адреса */}
-          {showAddressModal && (
-            <div className={styles.modalOverlay}>
-              <div className={styles.modal}>
-                <h3 className={styles.modalTitle}>Добавить новый адрес</h3>
-                <form onSubmit={handleAddAddress} className={styles.modalForm}>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Улица:</label>
-                    <input
-                      type="text"
-                      value={newAddress.street}
-                      onChange={(e) => setNewAddress({ ...newAddress, street: e.target.value })}
-                      className={styles.input}
-                      required
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Город:</label>
-                    <input
-                      type="text"
-                      value={newAddress.city}
-                      onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                      className={styles.input}
-                      required
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Область/регион:</label>
-                    <input
-                      type="text"
-                      value={newAddress.state}
-                      onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
-                      className={styles.input}
-                      required
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Почтовый индекс:</label>
-                    <input
-                      type="text"
-                      value={newAddress.postalCode}
-                      onChange={(e) => setNewAddress({ ...newAddress, postalCode: e.target.value })}
-                      className={styles.input}
-                      required
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Страна:</label>
-                    <input
-                      type="text"
-                      value={newAddress.country}
-                      onChange={(e) => setNewAddress({ ...newAddress, country: e.target.value })}
-                      className={styles.input}
-                      required
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Метка (опционально):</label>
-                    <input
-                      type="text"
-                      value={newAddress.label}
-                      onChange={(e) => setNewAddress({ ...newAddress, label: e.target.value })}
-                      className={styles.input}
-                    />
-                  </div>
-                  <div className={styles.modalButtons}>
-                    <button
-                      type="submit"
-                      className={`${styles.button} ${styles.green}`}
-                    >
-                      Сохранить
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddressModal(false)}
-                      className={`${styles.button} ${styles.gray}`}
-                    >
-                      Отмена
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
+        <AddAddressModal
+          isOpen={showAddressModal}
+          onClose={() => setShowAddressModal(false)}
+          onAddressAdded={(address) => {
+            setAddresses([...addresses, address]);
+            toast.success('Адрес добавлен!');
+          }}
+        />
         </div>
       )}
 

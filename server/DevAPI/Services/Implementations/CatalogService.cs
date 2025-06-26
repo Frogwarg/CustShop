@@ -85,7 +85,7 @@ namespace DevAPI.Services.Implementations
                 var tagList = tags.Split(',', StringSplitOptions.RemoveEmptyEntries)
                     .Select(t => t.Trim().ToLower())
                     .ToList();
-                query = query.Where(c => c.CatalogItemTags.Any(cit => tagList.Contains(cit.Tag.Name.ToLower())));
+                query = query.Where(c => tagList.All(t => c.CatalogItemTags.Any(cit => cit.Tag.Name.ToLower() == t)));
             }
 
             if (!string.IsNullOrEmpty(productType))
@@ -153,7 +153,6 @@ namespace DevAPI.Services.Implementations
                 DiscountedPrice = item.DiscountedPrice,
                 PreviewUrl = item.Design.PreviewUrl,
                 ProductType = item.Design.ProductType,
-                DesignData = item.Design.DesignData,
                 AuthorName = item.Author?.UserName ?? "Unknown",
                 Sizes = productDetails.Sizes,
                 Materials = productDetails.Materials,

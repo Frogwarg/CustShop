@@ -58,8 +58,13 @@ const TagManagement: React.FC = () => {
       setNewTagName("");
       fetchTags();
       toast.success("Тег создан");
-    } catch (error) {
-      toast.error("Ошибка создания тега");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        toast.error(error.response.data.message || "Тег с таким названием уже существует");
+      } else {
+        toast.error("Ошибка создания тега");
+      }
       console.error(error);
     }
   };
@@ -74,8 +79,15 @@ const TagManagement: React.FC = () => {
       setEditTag(null);
       fetchTags();
       toast.success("Тег обновлён");
-    } catch (error) {
-      toast.error("Ошибка обновления тега");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        toast.error(error.response.data.message || "Тег с таким названием уже существует");
+      } else if (error.response?.status === 404) {
+        toast.error(error.response.data.message || "Тег не найден");
+      } else {
+        toast.error("Ошибка обновления тега");
+      }
       console.error(error);
     }
   };

@@ -15,6 +15,12 @@ interface ProductCardProps {
   tags: string[];
 }
 
+const productTypes = [
+    { value: 'shirt', label: 'Футболка' },
+    { value: 'Mug', label: 'Кружка' },
+    { value: 'Pillow', label: 'Подушка' },
+  ];
+
 const ProductCard: React.FC<ProductCardProps> = ({
   id,
   name,
@@ -36,7 +42,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       />
       <h3 className={styles.productTitle}>{name}</h3>
       <p className={styles.productDescription}>{description}</p>
-      <p className={styles.productType}>Продукт: {productType}</p>
+      <p className={styles.productType}>Продукт: {productTypes.find((type) => type.value.toLowerCase() === productType.toLowerCase())?.label || productType}</p>
       <div className={styles.tagsContainer}>
         {tags.map((tag) => (
           <span key={tag} className={styles.tag}>{tag}</span>

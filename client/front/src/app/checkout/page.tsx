@@ -7,6 +7,9 @@ import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { toast } from 'sonner';
+
+import AddAddressModal from '../profile/AddAddressModal';
 import styles from './Checkout.module.css';
 
 interface ErrorResponse {
@@ -55,6 +58,24 @@ interface OrderResponse {
   createdAt: string;
 }
 
+interface UserInfo {
+  firstName: string;
+  lastName: string;
+  middleName?: string;
+  email: string;
+  phoneNumber: string;
+}
+
+interface SavedAddress {
+  id: string;
+  label: string;
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+
 // Схема валидации с помощью Zod
 const schema = z.object({
   firstName: z.string().min(1, 'Имя обязательно').regex(/^[a-zA-Zа-яА-Я]*$/, 'Только буквы'),
@@ -94,29 +115,20 @@ type FormData = z.infer<typeof schema>;
 const CheckoutPage = () => {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  // const [formData, setFormData] = useState({
-  //   firstName: '',
-  //   lastName: '',
-  //   middleName: '',
-  //   email: '',
-  //   phoneNumber: '',
-  //   deliveryMethod: 'Delivery',
-  //   street: '',
-  //   city: '',
-  //   state: '',
-  //   postalCode: '',
-  //   country: '',
-  //   discountCode: '',
-  //   orderComment: '',
-  // });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Настройка формы с react-hook-form
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [isAddAddressModalOpen, setIsAddAddressModalOpen] = useState(false);
+  
+// Настройка формы с react-hook-form
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -129,6 +141,20 @@ const CheckoutPage = () => {
 
   // Загрузка корзины при монтировании компонента
   useEffect(() => {
+    const checkAuthAndFetchUser = async () => {
+      try {
+        const isAuth = await authService.validateToken();
+        setIsAuthenticated(isAuth);
+        if (isAuth) {
+          const user = await authService.getCurrentUser();
+          if (user) {
+            setUserInfo(user);
+          }
+        }
+      } catch {
+        setIsAuthenticated(false);
+      }
+    };
     const fetchCart = async () => {
       try {
         const response = await authService.axiosWithRefresh<CartItem[]>('get', '/cart');
@@ -137,8 +163,45 @@ const CheckoutPage = () => {
         setError('Не удалось загрузить корзину');
       }
     };
+    checkAuthAndFetchUser();
     fetchCart();
   }, []);
+
+  // Загрузка сохраненных адресов для авторизованного пользователя
+  useEffect(() => {
+    if (isAuthenticated && deliveryMethod === 'Delivery') {
+      const fetchSavedAddresses = async () => {
+        try {
+          const response = await authService.axiosWithRefresh<SavedAddress[]>('get', '/profile/addresses');
+          setSavedAddresses(response);
+        } catch {
+          setError('Не удалось загрузить сохраненные адреса');
+        }
+      };
+      fetchSavedAddresses();
+    }
+  }, [isAuthenticated, deliveryMethod]);
+
+  // Заполнение формы данными пользователя
+  const fillWithUserData = () => {
+    if (userInfo) {
+      setValue('firstName', userInfo.firstName);
+      setValue('lastName', userInfo.lastName);
+      setValue('middleName', userInfo.middleName || '');
+      setValue('email', userInfo.email);
+      setValue('phoneNumber', userInfo.phoneNumber);
+    }
+  };
+
+  // Выбор сохраненного адреса
+  const selectSavedAddress = (address: SavedAddress) => {
+    setValue('street', address.street);
+    setValue('city', address.city);
+    setValue('state', address.state);
+    setValue('postalCode', address.postalCode);
+    setValue('country', address.country);
+    setIsAddressModalOpen(false);
+  };
 
   // Обработка изменений в форме
   // const handleInputChange = (
@@ -174,13 +237,12 @@ const CheckoutPage = () => {
         },
       };
 
-      // const response = await axios.post<OrderResponse>('/api/order', orderData);
       const response = await authService.axiosWithRefresh<OrderResponse>('post', '/order', orderData);
       router.push(`/order-confirmation?orderId=${response.id}`);
     } catch (err: unknown) {
         if (err instanceof AxiosError) {
             const axiosError = err as AxiosError<ErrorResponse>;
-            console.log("Ошибка:", axiosError);
+            console.error("Ошибка:", axiosError);
             setError(axiosError.response?.data?.message || 'Ошибка Axios при создании заказа');
         } else {
             setError('Ошибка при создании заказа');
@@ -202,6 +264,17 @@ const CheckoutPage = () => {
         {/* Форма заказа */}
         <form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
           <h2>Контактные данные</h2>
+
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={fillWithUserData}
+              className={styles.fillButton}
+            >
+              Заполнить данными аккаунта
+            </button>
+          )}
+
           <div>
             <input
               {...register('firstName')}
@@ -251,6 +324,15 @@ const CheckoutPage = () => {
 
           {deliveryMethod === 'Delivery' && (
             <>
+              {isAuthenticated && (
+                <button
+                  type="button"
+                  onClick={() => setIsAddressModalOpen(true)}
+                  className={styles.addressButton}
+                >
+                  Сохранённые адреса
+                </button>
+              )}
               <h2>Адрес доставки</h2>
               <div>
                 <input
@@ -311,10 +393,71 @@ const CheckoutPage = () => {
             />
           </div>
 
-          <button type="submit" disabled={loading || !(cartItems?.length)}>
+          <button type="submit" disabled={loading || !(cartItems?.length)} className={styles.submitButton}>
             {loading ? 'Создание заказа...' : 'Оформить заказ'}
           </button>
         </form>
+
+        {/* Модальное окно для выбора адреса */}
+        {isAddressModalOpen && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modal}>
+              <h2>Выберите сохранённый адрес</h2>
+              {savedAddresses.length === 0 ? (
+                <p>Нет сохранённых адресов</p>
+              ) : (
+                <ul className={styles.addressList}>
+                  {savedAddresses.map((address) => (
+                    <li
+                      key={address.id}
+                      onClick={() => selectSavedAddress(address)}
+                      className={styles.addressItem}
+                    >
+                      <strong>{address.label}</strong>
+                      <p>{address.street}, {address.city}, {address.state}, {address.postalCode}, {address.country}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className={styles.modalButtons}>
+                <button
+                  onClick={() => setIsAddAddressModalOpen(true)}
+                  className={`${styles.addAddressButton} ${styles.blue}`}
+                >
+                  Добавить новый
+                </button>
+                <button
+                  onClick={() => setIsAddressModalOpen(false)}
+                  className={`${styles.closeModalButton} ${styles.gray}`}
+                >
+                  Закрыть
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Модальное окно для добавления нового адреса */}
+        <AddAddressModal
+          isOpen={isAddAddressModalOpen}
+          onClose={() => setIsAddAddressModalOpen(false)}
+          onAddressAdded={(address) => {
+            // Ensure label is always a string
+            const normalizedAddress: SavedAddress = {
+              ...address,
+              label: address.label ?? 'Без метки',
+            };
+            setSavedAddresses([...savedAddresses, normalizedAddress]);
+            setValue('street', normalizedAddress.street);
+            setValue('city', normalizedAddress.city);
+            setValue('state', normalizedAddress.state);
+            setValue('postalCode', normalizedAddress.postalCode);
+            setValue('country', normalizedAddress.country);
+            setIsAddAddressModalOpen(false);
+            setIsAddressModalOpen(false);
+            toast.success('Адрес добавлен и выбран!');
+          }}
+        />
 
         {/* Список товаров */}
         <div className={styles.cartSummary}>

@@ -44,7 +44,7 @@
   min-height: 100px;
 }
 
-.form button {
+.submitButton {
   padding: 15px;
   background-color: #0070f3;
   color: white;
@@ -54,9 +54,93 @@
   cursor: pointer;
 }
 
-.form button:disabled {
+.submitButton:disabled {
   background-color: #ccc;
   cursor: not-allowed;
+}
+
+.fillButton {
+  padding: 8px 12px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+
+.addressButton {
+  padding: 8px 12px;
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalButtons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.modal {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.addressList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+.addressItem {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.addressItem:hover {
+  background-color: #f8f9fa;
+}
+.addAddressButton, .closeModalButton{
+  padding: 10px;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.addAddressButton {
+  background-color: #3591dc;
+}
+.closeModalButton {
+  background-color: #dc3545;
 }
 
 .cartSummary {

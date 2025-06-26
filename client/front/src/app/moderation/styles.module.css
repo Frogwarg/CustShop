@@ -31,6 +31,13 @@
 .th {
   background-color: #f2f2f2;
   font-weight: bold;
+  padding: 8px;
+  text-align: left;
+  cursor: pointer; /* Указываем, что заголовки кликабельны */
+}
+
+.th:hover {
+  background-color: #e0e0e0; /* Подсветка при наведении */
 }
 
 .tr {

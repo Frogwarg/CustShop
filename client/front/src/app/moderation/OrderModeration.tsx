@@ -66,41 +66,59 @@ const OrderModeration: React.FC = () => {
     orderId: string;
     field: "street" | "city" | "state" | "postalCode" | "country" | null;
   }>({ orderId: "", field: null });
+  const [sortField, setSortField] = useState<'createdAt' | 'totalAmount' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const ordersResponse = await authService.axiosWithRefresh<Order[]>(
-          "get",
-          "/order/paid"
-        );
-        setOrders(ordersResponse);
-        setOrderFormData(
-          ordersResponse.reduce(
-            (acc: OrderFormData, o) => ({
-              ...acc,
-              [o.id]: {
-                status: o.status,
-                street: o.address.street,
-                city: o.address.city,
-                state: o.address.state,
-                postalCode: o.address.postalCode,
-                country: o.address.country,
-              },
-            }),
-            {}
-          )
-        );
-      } catch (error) {
-        console.error("Ошибка:", error);
-        toast.error("Ошибка загрузки заказов");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchOrders();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortField, sortDirection]);
+
+  const fetchOrders = async () => {
+    try {
+      const ordersResponse = await authService.axiosWithRefresh<Order[]>('get', '/order/paid');
+      // Фильтруем заказы, исключая статус "Confirmed"
+      const filteredOrders = ordersResponse.filter(order => order.status !== 'Confirmed');
+      
+      // Сортировка
+      const sortedOrders = [...filteredOrders];
+      if (sortField) {
+        sortedOrders.sort((a, b) => {
+          if (sortField === 'createdAt') {
+            const dateA = new Date(a.createdAt).getTime();
+            const dateB = new Date(b.createdAt).getTime();
+            return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+          } else if (sortField === 'totalAmount') {
+            return sortDirection === 'asc' ? a.totalAmount - b.totalAmount : b.totalAmount - a.totalAmount;
+          }
+          return 0;
+        });
+      }
+
+      setOrders(sortedOrders);
+      setOrderFormData(
+        sortedOrders.reduce(
+          (acc: OrderFormData, o) => ({
+            ...acc,
+            [o.id]: {
+              status: o.status,
+              street: o.address.street,
+              city: o.address.city,
+              state: o.address.state,
+              postalCode: o.address.postalCode,
+              country: o.address.country,
+            },
+          }),
+          {}
+        )
+      );
+    } catch (error) {
+      console.error('Ошибка:', error);
+      toast.error('Ошибка загрузки заказов');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOrderUpdate = async (orderId: string) => {
     const data = {
@@ -160,6 +178,15 @@ const OrderModeration: React.FC = () => {
     setExpandedOrder(expandedOrder === orderId ? null : orderId);
   };
 
+  const handleSort = (field: 'createdAt' | 'totalAmount') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
   if (loading) return <div className={styles.loading}>Загрузка...</div>;
 
   return (
@@ -168,10 +195,14 @@ const OrderModeration: React.FC = () => {
         <thead>
           <tr>
             <th className={styles.th}>Номер заказа</th>
-            <th className={styles.th}>Общая сумма</th>
+            <th className={styles.th} onClick={() => handleSort('totalAmount')}>
+              Общая сумма {sortField === 'totalAmount' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+            </th>
             <th className={styles.th}>Статус заказа</th>
             <th className={styles.th}>Способ доставки</th>
-            <th className={styles.th}>Дата создания</th>
+            <th className={styles.th} onClick={() => handleSort('createdAt')}>
+              Дата создания {sortField === 'createdAt' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+            </th>
             <th className={styles.th}>Комментарий</th>
           </tr>
         </thead>

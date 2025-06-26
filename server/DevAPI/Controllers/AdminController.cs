@@ -1,4 +1,5 @@
 ﻿using DevAPI.Data;
+using DevAPI.Exceptions;
 using DevAPI.Models.DTOs;
 using DevAPI.Models.Entities;
 using DevAPI.Services.Interfaces;
@@ -35,23 +36,43 @@ namespace DevAPI.Controllers
         [HttpPost("tags")]
         public async Task<IActionResult> CreateTag([FromBody] CreateTagRequest request)
         {
-            var tag = new Tag { Id = Guid.NewGuid(), Name = request.Name };
-            _context.Tags.Add(tag);
-            await _context.SaveChangesAsync();
-            return Ok(new { message = "Тег создан", tagId = tag.Id });
+            try
+            {
+                await _adminService.CreateTagAsync(request.Name);
+                return Ok(new { message = "Тег создан" });
+            }
+            catch (BadRequestException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при создании тега");
+                return StatusCode(500, new { message = "Ошибка сервера при создании тега" });
+            }
         }
 
         [HttpPut("tags/{id}")]
         public async Task<IActionResult> UpdateTag(Guid id, [FromBody] UpdateTagRequest request)
         {
-            var tag = await _context.Tags.FindAsync(id);
-            if (tag == null)
+            try
             {
-                return NotFound("Тег не найден");
+                await _adminService.UpdateTagAsync(id, request.Name);
+                return Ok(new { message = "Тег обновлён" });
             }
-            tag.Name = request.Name;
-            await _context.SaveChangesAsync();
-            return Ok(new { message = "Тег обновлён" });
+            catch (BadRequestException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при обновлении тега");
+                return StatusCode(500, new { message = "Ошибка сервера при обновлении тега" });
+            }
         }
 
         [HttpDelete("tags/{id}")]

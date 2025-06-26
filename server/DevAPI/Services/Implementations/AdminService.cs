@@ -49,6 +49,54 @@ namespace DevAPI.Services.Implementations
             return (tags, totalCount);
         }
 
+        public async Task CreateTagAsync(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new BadRequestException("Название тега не может быть пустым");
+            }
+
+            var existingTag = await _context.Tags
+                .FirstOrDefaultAsync(t => t.Name.ToLower() == name.Trim().ToLower());
+            if (existingTag != null)
+            {
+                throw new BadRequestException("Тег с таким названием уже существует");
+            }
+
+            var tag = new Tag
+            {
+                Id = Guid.NewGuid(),
+                Name = name.Trim()
+            };
+            _context.Tags.Add(tag);
+            await _context.SaveChangesAsync();
+            await LogAdminActionAsync("CreateTag", "Tag", tag.Id, new { Name = tag.Name });
+        }
+        public async Task UpdateTagAsync(Guid id, string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new BadRequestException("Название тега не может быть пустым");
+            }
+
+            var tag = await _context.Tags.FindAsync(id);
+            if (tag == null)
+            {
+                throw new NotFoundException("Тег не найден");
+            }
+
+            var existingTag = await _context.Tags
+                .FirstOrDefaultAsync(t => t.Name.ToLower() == name.Trim().ToLower() && t.Id != id);
+            if (existingTag != null)
+            {
+                throw new BadRequestException("Тег с таким названием уже существует");
+            }
+
+            tag.Name = name.Trim();
+            await _context.SaveChangesAsync();
+            await LogAdminActionAsync("UpdateTag", "Tag", id, new { Name = tag.Name });
+        }
+
         public async Task<(List<UserDto> Users, int TotalCount)> GetUsersAsync(string search = null, string role = null, int page = 1, int pageSize = 10)
         {
             var query = _userManager.Users.Include(u => u.UserProfile).AsQueryable();

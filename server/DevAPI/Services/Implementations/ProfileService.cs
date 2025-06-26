@@ -107,12 +107,12 @@ namespace DevAPI.Services
                 .Select(sa => new AddressDto
                 {
                     Id = sa.Id.ToString(),
+                    Label = sa.Label,
                     Street = sa.Address.Street,
                     City = sa.Address.City,
                     State = sa.Address.State,
                     PostalCode = sa.Address.PostalCode,
                     Country = sa.Address.Country,
-                    Label = sa.Label
                 })
                 .ToListAsync();
 
@@ -147,12 +147,12 @@ namespace DevAPI.Services
             return new AddressDto
             {
                 Id = savedAddress.Id.ToString(),
+                Label = savedAddress.Label,
                 Street = address.Street,
                 City = address.City,
                 State = address.State,
                 PostalCode = address.PostalCode,
                 Country = address.Country,
-                Label = savedAddress.Label
             };
         }
 

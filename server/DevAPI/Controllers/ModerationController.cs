@@ -37,7 +37,7 @@ namespace DevAPI.Controllers
         [HttpPost("{designId}/approve")]
         public async Task<IActionResult> ApproveDesign(Guid designId, [FromBody] ApproveDesignRequest request)
         {
-            await _designService.ApproveDesign(designId, request.ModeratorComment);
+            await _designService.ApproveDesign(designId, request);
             var catalogItem = await _catalogService.CreateCatalogItem(designId, request);
             return Ok(new { message = "Дизайн одобрен и добавлен в каталог", catalogItemId = catalogItem.Id });
         }

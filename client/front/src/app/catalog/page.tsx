@@ -10,7 +10,7 @@ const CatalogPage = () => {
   const [catalog, setCatalog] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(9);
   const [filters, setFilters] = useState({
     search: '',
     productType: ''

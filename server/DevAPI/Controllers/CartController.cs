@@ -69,6 +69,49 @@ namespace DevAPI.Controllers
             }
         }
 
+        [HttpPost("add-existing")]
+        public async Task<IActionResult> AddExistingToCart([FromBody] AddExistingCartItemDto request)
+        {
+            try
+            {
+                _logger.LogInformation($"Получен запрос на добавление существующего дизайна в корзину: DesignId={request.DesignId}, Quantity={request.Quantity}, Price={request.Price}");
+                _logger.LogInformation($"Пользователь авторизован?: {User.Identity.IsAuthenticated}");
+
+                var userId = User.Identity.IsAuthenticated
+                    ? Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value)
+                    : (Guid?)null;
+
+                _logger.LogInformation($"UserId: {userId?.ToString() ?? "null"}");
+
+                string sessionId = null;
+                if (!userId.HasValue) // Только для неавторизованных пользователей
+                {
+                    sessionId = HttpContext.Request.Cookies["cart_session_id"];
+                    if (string.IsNullOrEmpty(sessionId))
+                    {
+                        sessionId = Guid.NewGuid().ToString();
+                        _logger.LogInformation($"Creating new cart_session_id: {sessionId}");
+                        HttpContext.Response.Cookies.Append("cart_session_id", sessionId, new CookieOptions
+                        {
+                            HttpOnly = true,
+                            Expires = DateTime.Now.AddDays(30),
+                            SameSite = SameSiteMode.Lax,
+                            Secure = false
+                        });
+                    }
+                    _logger.LogInformation($"Generated or retrieved SessionId: {sessionId}");
+                }
+
+                await _cartService.AddExistingToCart(userId, sessionId, request.DesignId, request.Quantity, request.Price);
+                return Ok(new { message = "Товар успешно добавлен в корзину" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при добавлении существующего дизайна в корзину");
+                return StatusCode(500, ex.Message);
+            }
+        }
+
         [HttpGet]
         public async Task<ActionResult<List<CartItemDto>>> GetCart()
         {
@@ -162,5 +205,11 @@ namespace DevAPI.Controllers
 
             return Ok();
         }
+    }
+    public class AddExistingCartItemDto
+    {
+        public Guid DesignId { get; set; }
+        public int Quantity { get; set; }
+        public decimal Price { get; set; }
     }
 } 

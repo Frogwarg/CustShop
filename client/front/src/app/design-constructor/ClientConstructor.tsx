@@ -823,13 +823,6 @@ export default function ClientConstructor() {
             let overlayImage = canvasRef.current?.overlayImage;
             if (!overlayImage)
                 overlayImage = canvasRef.current?.backgroundImage as fabric.Image | undefined;
-            console.log(overlayImage);
-            console.log({
-                top: overlayImage ? overlayImage.top : 0,
-                left: overlayImage ? overlayImage.left : 0,
-                width: overlayImage ? overlayImage.width : canvasRef.current.width,
-                height: overlayImage ? overlayImage.height : canvasRef.current.height
-            });
             const previewDataURL = canvasRef.current.toDataURL({
                 format: 'png',
                 quality: 1.0,
@@ -860,37 +853,6 @@ export default function ClientConstructor() {
             };
 
             const designHash = CryptoJS.SHA256(JSON.stringify(designData)).toString();
-
-            // const token = localStorage.getItem('token');
-            // if (!token) {
-            //     throw new Error('Токен авторизации отсутствует');
-            // }
-
-            // Сохраняем дизайн в историю
-            // const designRequest = {
-            //     name: `Дизайн ${new Date().toLocaleString()}`,
-            //     description: 'Пользовательский дизайн',
-            //     previewUrl: imageUrl,
-            //     designData: JSON.stringify(designData),
-            //     designHash: designHash,
-            //     productType: selectedProduct?.id || 'unknown',
-            // };
-
-            // const saveDesignResponse = await authService.fetchWithRefresh('/api/profile/designs', {
-            //     method: 'POST',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //         'Authorization': `Bearer ${token}`,
-            //     },
-            //     body: JSON.stringify(designRequest),
-            // });
-    
-            // if (!saveDesignResponse.ok) {
-            //     const errorText = await saveDesignResponse.text();
-            //     throw new Error(`Ошибка сохранения в историю: ${saveDesignResponse.status} - ${errorText}`);
-            // }
-
-            // const savedDesign = await saveDesignResponse.json();
             // Создаем объект для корзины с полученным URL изображения
             const cartItem = {
                 design: {
@@ -938,12 +900,6 @@ export default function ClientConstructor() {
             setIsSaving(false);
         }
     };
-
-    // const getAllObjects = () =>{
-    //     console.log('Canvas Objects:', canvasRef.current?.getObjects());
-    //     console.log('Layers:', layers);
-    //     console.log('selectedProduct: ', selectedProduct);
-    // }
 
     const resetDesign = async () => {
         if (canvasRef.current) {

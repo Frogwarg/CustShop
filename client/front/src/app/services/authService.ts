@@ -24,6 +24,14 @@ export interface AuthResponse {
   expiration: string;
 }
 
+export interface UserInfo {
+  firstName: string;
+  lastName: string;
+  middleName?: string;
+  email: string;
+  phoneNumber: string;
+}
+
 const authService = {
   async login(data: LoginRequest): Promise<AuthResponse> {
     const response = await axios.post(`${API_URL}/auth/login`, data, {
@@ -188,6 +196,16 @@ const authService = {
 
   isAuthenticated() {
     return !!this.getToken();
+  },
+
+  async getCurrentUser(): Promise<UserInfo | null> {
+    try {
+      const response = await this.axiosWithRefresh<UserInfo>('get', '/profile');
+      return response;
+    } catch (error) {
+      console.error('Ошибка при получении данных пользователя:', error);
+      return null;
+    }
   },
 
   // Декодируем JWT для получения ролей

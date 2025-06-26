@@ -70,6 +70,44 @@ namespace DevAPI.Services
             await _context.SaveChangesAsync();
         }
 
+        public async Task AddExistingToCart(Guid? userId, string sessionId, Guid designId, int quantity, decimal price)
+        {
+            var design = await _context.Designs
+                .FirstOrDefaultAsync(d => d.Id == designId);
+
+            if (design == null)
+            {
+                _logger.LogWarning($"Дизайн с ID {designId} не найден");
+                throw new Exception("Дизайн не найден");
+            }
+
+            var existingItem = await _context.CartItems
+                .FirstOrDefaultAsync(c =>
+                    (userId.HasValue ? c.UserId == userId : c.SessionId == sessionId) &&
+                    c.DesignId == designId);
+
+            if (existingItem != null)
+            {
+                existingItem.Quantity += quantity;
+            }
+            else
+            {
+                var newItem = new CartItem
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    SessionId = !userId.HasValue ? sessionId : null,
+                    DesignId = designId,
+                    Quantity = quantity,
+                    Price = price,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.CartItems.Add(newItem);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
         private async Task<Guid> GetOrCreateDesignTypeId(string typeName)
         {
             var designType = await _context.DesignTypes
@@ -99,27 +137,22 @@ namespace DevAPI.Services
                 .FirstOrDefaultAsync(c => 
                     (userId.HasValue ? c.UserId == userId : c.SessionId == sessionId) && 
                     c.DesignId == designId);
-
-            if (item != null)
-            {
-                if (!await _context.CartItems.AnyAsync(c => c.DesignId == designId && c.Id != item.Id))
-                {
-                    _context.Designs.Remove(item.Design);
-                }
-                _context.CartItems.Remove(item);
-                try
-                {
-                    await _context.SaveChangesAsync();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"Error during SaveChangesAsync for CartItem {item.Id}");
-                    throw;
-                }
-            }
-            else
+            
+            if (item == null)
             {
                 _logger.LogWarning($"CartItem for Design {designId} not found for user {userId} or session {sessionId}");
+                return;
+            }
+
+            _context.CartItems.Remove(item);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error during SaveChangesAsync for CartItem {item.Id}");
+                throw;
             }
         }
 
@@ -171,15 +204,6 @@ namespace DevAPI.Services
                 .Include(c => c.Design)
                 .Where(c => userId.HasValue ? c.UserId == userId : c.SessionId == sessionId)
                 .ToListAsync();
-
-            foreach (var item in items)
-            {
-                // Удаляем дизайн, если он больше нигде не используется
-                if (!await _context.CartItems.AnyAsync(c => c.DesignId == item.DesignId && c.Id != item.Id))
-                {
-                    _context.Designs.Remove(item.Design);
-                }
-            }
 
             _context.CartItems.RemoveRange(items);
             await _context.SaveChangesAsync();

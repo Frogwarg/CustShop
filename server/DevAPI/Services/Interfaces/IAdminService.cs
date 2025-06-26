@@ -6,6 +6,8 @@ namespace DevAPI.Services.Interfaces
     public interface IAdminService
     {
         Task<(List<TagDto> Tags, int TotalCount)> GetTagsAsync(string search = null, int page = 1, int pageSize = 10);
+        Task CreateTagAsync(string name);
+        Task UpdateTagAsync(Guid tagId, string name);
         Task<(List<UserDto> Users, int TotalCount)> GetUsersAsync(string search = null, string role = null, int page = 1, int pageSize = 10);
         Task UpdateUserAsync(Guid userId, UpdateUserRequest request);
         Task DeleteUserAsync(Guid userId);

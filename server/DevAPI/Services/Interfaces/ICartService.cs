@@ -7,6 +7,7 @@ namespace DevAPI.Services
     public interface ICartService
     {
         Task AddToCart(Guid? userId, string sessionId, CartItemDto cartItem);
+        Task AddExistingToCart(Guid? userId, string sessionId, Guid designId, int quantity, decimal price);
         Task RemoveFromCart(Guid? userId, string sessionId, Guid productId);
         Task<List<CartItemDto>> GetCart(Guid? userId, string sessionId);
         Task ClearCart(Guid? userId, string sessionId);
